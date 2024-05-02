@@ -23,7 +23,7 @@ def enviar_mensagem(pergunta):
     response = client.chat.completions.create(
         model="llama-13b-chat",
         messages=[
-            {"role": "system", "content": "Olá! Sou um especialista em Python, Pandas, PySpark e AWS."},
+            {"role": "system", "content": "você é um especialista em Python, Pandas, sql, PySpark e AWS e tudo que você responder tem que ser em português."},
             {"role": "user", "content": pergunta}
         ]
     )
