@@ -31,21 +31,23 @@ def enviar_mensagem(pergunta):
     conversation_history.append({"role": "ai", "content": response.choices[0].message.content})
     return response.choices[0].message.content
 
-# Input para o usuário na tela
-st.write("Digite sua pergunta para a IA:")
-pergunta = st.text_input("", key="pergunta")
+# Loop para a conversa continuar indefinidamente
+while True:
+    # Input para o usuário na tela
+    st.write("Digite sua pergunta para a IA:")
+    pergunta = st.chat_input("", key="pergunta")
 
-# Enviar a pergunta para a IA quando o usuário pressionar Enter
-if pergunta:
-    # Envie a pergunta para a IA e obtenha a resposta
-    resposta = enviar_mensagem(pergunta)
-    st.write("Resposta da IA:")
-    st.write(resposta)
+    # Enviar a pergunta para a IA quando o usuário pressionar Enter
+    if pergunta:
+        # Envie a pergunta para a IA e obtenha a resposta
+        resposta = enviar_mensagem(pergunta)
+        st.write("Resposta da IA:")
+        st.write(resposta)
 
-# Exibir histórico de conversa
-st.subheader("Histórico de Conversa")
-for message in conversation_history:
-    if message['role'] == 'user':
-        st.text_input("Usuário:", message['content'], key=message['content'])
-    elif message['role'] == 'ai':
-        st.text_area("IA:", message['content'], key=message['content'])
+    # Exibir histórico de conversa
+    st.subheader("Histórico de Conversa")
+    for message in conversation_history:
+        if message['role'] == 'user':
+            st.text_input("Usuário:", message['content'], key=message['content'])
+        elif message['role'] == 'ai':
+            st.text_area("IA:", message['content'], key=message['content'])
