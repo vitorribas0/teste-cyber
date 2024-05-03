@@ -16,38 +16,29 @@ conversation_history = []
 
 # Função para enviar mensagem e obter resposta
 def enviar_mensagem(pergunta):
-    global conversation_history
-    # Adicionar a mensagem do usuário ao histórico
-    conversation_history.append({"role": "user", "content": pergunta})
     # Enviar a mensagem para a IA e obter a resposta
     response = client.chat.completions.create(
         model="llama-13b-chat",
         messages=[
-            {"role": "system", "content": "você é um especialista em Python, Pandas, sql, PySpark e AWS e tudo que você responder tem que ser em português."},
+            {"role": "system", "content": "Olá! Sou um especialista em Python, Pandas, PySpark e AWS."},
             {"role": "user", "content": pergunta}
         ]
     )
-    # Adicionar a resposta da IA ao histórico
-    conversation_history.append({"role": "ai", "content": response.choices[0].message.content})
     return response.choices[0].message.content
 
-# Loop para a conversa continuar indefinidamente
-while True:
-    # Input para o usuário na tela
-    st.write("Digite sua pergunta para a IA:")
-    pergunta = st.chat_input("", key="pergunta")
+# Interface Streamlit para envio de pergunta
+pergunta = st.text_input("Digite sua pergunta para a IA:", key="input_pergunta")
 
-    # Enviar a pergunta para a IA quando o usuário pressionar Enter
-    if pergunta:
-        # Envie a pergunta para a IA e obtenha a resposta
-        resposta = enviar_mensagem(pergunta)
-        st.write("Resposta da IA:")
-        st.write(resposta)
+# Enviar a pergunta para a IA quando o usuário pressionar Enter
+if pergunta:
+    # Adicionar a pergunta ao histórico de conversa
+    conversation_history.append(("🙎‍♂️:", pergunta))
+    # Envie a pergunta para a IA e obtenha a resposta
+    resposta = enviar_mensagem(pergunta)
+    # Adicionar a resposta ao histórico de conversa
+    conversation_history.append(("🤖:", resposta))
 
-    # Exibir histórico de conversa
-    st.subheader("Histórico de Conversa")
-    for message in conversation_history:
-        if message['role'] == 'user':
-            st.text_input("Usuário:", message['content'], key=message['content'])
-        elif message['role'] == 'ai':
-            st.text_area("IA:", message['content'], key=message['content'])
+# Exibir histórico de conversa
+st.subheader("Histórico de Conversa")
+for role, message in conversation_history:
+    st.write(role, message)
