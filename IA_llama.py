@@ -1,4 +1,5 @@
 import streamlit as st
+import sqlite3
 from openai import OpenAI
 
 st.set_page_config(layout="wide")  # Configuração para layout de página amplo
@@ -9,8 +10,13 @@ client = OpenAI(
     base_url="https://api.llama-api.com"
 )
 
-# Histórico de conversa
-conversation_history = []
+# Conexão com o banco de dados SQLite
+conn = sqlite3.connect('chat_history.db')
+c = conn.cursor()
+
+# Criar a tabela se não existir
+c.execute('''CREATE TABLE IF NOT EXISTS conversation_history 
+             (role text, message text)''')
 
 # Função para enviar mensagem e obter resposta
 def enviar_mensagem(pergunta):
@@ -25,16 +31,23 @@ def enviar_mensagem(pergunta):
     return response.choices[0].message.content
 
 # Interface Streamlit para envio de pergunta
-pergunta = st.chat_input("Digite sua pergunta para a IA e pressione Enter:")
+pergunta = st.chat_input("Digite sua pergunta para a IA:")
 
-# Enviar a pergunta para a IA quando o usuário pressionar Enter
+# Botão para limpar o histórico de conversas
+if st.button("Limpar Histórico de Conversas"):
+    c.execute("DELETE FROM conversation_history")
+    conn.commit()
+
+# Enviar a pergunta para a IA quando o usuário enviar a mensagem
 if pergunta:
     # Adicionar a pergunta ao histórico de conversa
-    conversation_history.append(("🙎‍♂️:", pergunta))
+    c.execute("INSERT INTO conversation_history VALUES (?, ?)", ("🙎‍♂️:", pergunta))
+    conn.commit()
     # Envie a pergunta para a IA e obtenha a resposta
     resposta = enviar_mensagem(pergunta)
     # Adicionar a resposta ao histórico de conversa
-    conversation_history.append(("🤖:", resposta))
+    c.execute("INSERT INTO conversation_history VALUES (?, ?)", ("🤖:", resposta))
+    conn.commit()
 
 # Barra lateral
 st.sidebar.title("🦙 LLAMA 2")  # Título na barra lateral
@@ -43,7 +56,9 @@ st.sidebar.markdown("Este é um projeto feito utilizando o 🦙 LLAMA 2.")
 
 st.title("Chat com OpenAI")
 
-# Exibir histórico de conversa
-st.subheader("Histórico de Conversa")
-for role, message in conversation_history:
-    st.write(role, message)
+# Carregar e exibir o histórico de conversa do banco de dados
+for row in c.execute("SELECT * FROM conversation_history"):
+    st.write(row[0], row[1])
+
+# Fechar a conexão com o banco de dados
+conn.close()
