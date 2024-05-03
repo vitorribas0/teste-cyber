@@ -3,8 +3,6 @@ from openai import OpenAI
 
 st.set_page_config(layout="wide")  # Configuração para layout de página amplo
 
-st.title("Chat com OpenAI")
-
 # Inicialize o cliente OpenAI
 client = OpenAI(
     api_key="LL-rZdxy5UFL4evTVeC6H1Jzuph00H08neiKQUGm3HSYOm1qMD4T8YxonRYedIH6856",
@@ -27,7 +25,7 @@ def enviar_mensagem(pergunta):
     return response.choices[0].message.content
 
 # Interface Streamlit para envio de pergunta
-pergunta = st.text_input("Digite sua pergunta para a IA:", key="input_pergunta")
+pergunta = st.chat_input("Digite sua pergunta para a IA e pressione Enter:")
 
 # Enviar a pergunta para a IA quando o usuário pressionar Enter
 if pergunta:
@@ -37,6 +35,13 @@ if pergunta:
     resposta = enviar_mensagem(pergunta)
     # Adicionar a resposta ao histórico de conversa
     conversation_history.append(("🤖:", resposta))
+
+# Barra lateral
+st.sidebar.title("🦙 LLAMA 2")  # Título na barra lateral
+# Adicionando uma descrição na barra lateral
+st.sidebar.markdown("Este é um projeto feito utilizando o 🦙 LLAMA 2.")
+
+st.title("Chat com OpenAI")
 
 # Exibir histórico de conversa
 st.subheader("Histórico de Conversa")
