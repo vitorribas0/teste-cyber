@@ -38,21 +38,34 @@ if st.button("Limpar Histórico de Conversas"):
     c.execute("DELETE FROM conversation_history")
     conn.commit()
 
+# Adicionar um input de documento
+uploaded_file = st.file_uploader("Selecione um documento:", type=["pdf", "docx", "txt"])
+
+# Se um arquivo for selecionado, exibir um botão para upload
+if uploaded_file is not None:
+    st.write("Você selecionou um arquivo!")
+    if st.button("Upload do arquivo"):
+        # Aqui você pode adicionar lógica para lidar com o upload de arquivo
+        # Por exemplo, você pode salvar o arquivo em um diretório específico
+        with open("uploads/" + uploaded_file.name, "wb") as f:
+            f.write(uploaded_file.read())
+        st.write("Arquivo upload com sucesso!")
+
 # Enviar a pergunta para a IA quando o usuário enviar a mensagem
 if pergunta:
     # Adicionar a pergunta ao histórico de conversa
-    c.execute("INSERT INTO conversation_history VALUES (?, ?)", ("🙎‍♂️:", pergunta))
+    c.execute("INSERT INTO conversation_history VALUES (?, ?)", ("", pergunta))
     conn.commit()
     # Envie a pergunta para a IA e obtenha a resposta
     resposta = enviar_mensagem(pergunta)
     # Adicionar a resposta ao histórico de conversa
-    c.execute("INSERT INTO conversation_history VALUES (?, ?)", ("🤖:", resposta))
+    c.execute("INSERT INTO conversation_history VALUES (?, ?)", ("", resposta))
     conn.commit()
 
 # Barra lateral
-st.sidebar.title("🦙 LLAMA 2")  # Título na barra lateral
+st.sidebar.title("")  # Título na barra lateral
 # Adicionando uma descrição na barra lateral
-st.sidebar.markdown("Este é um projeto feito utilizando o 🦙 LLAMA 2.")
+st.sidebar.markdown("Este é um projeto feito utilizando o .")
 
 st.title("Chat com OpenAI")
 
