@@ -24,7 +24,8 @@ def insert_data_from_df(df, table_name):
     # Inserindo dados do DataFrame na tabela
     for _, row in df.iterrows():
         placeholders = ', '.join(['?' for _ in row])
-        insert_query = f'INSERT INTO "{table_name}" ({", ".join([f\'"{col}"\' for col in df.columns])}) VALUES ({placeholders})'
+        columns = ', '.join([f'"{col}"' for col in df.columns])
+        insert_query = f'INSERT INTO "{table_name}" ({columns}) VALUES ({placeholders})'
         c.execute(insert_query, tuple(row))
     
     conn.commit()
