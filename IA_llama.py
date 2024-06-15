@@ -13,6 +13,12 @@ def create_connection(db_file):
         st.error(f"Erro ao conectar ao banco de dados: {e}")
     return conn
 
+# Função para normalizar os nomes das colunas
+def normalize_column_names(df):
+    """ Normaliza os nomes das colunas removendo espaços e caracteres especiais """
+    df.columns = df.columns.str.strip().str.replace(' ', '_').str.replace(r'\W', '', regex=True)
+    return df
+
 # Função para criar uma tabela no banco de dados com base no DataFrame
 def create_table_from_df(conn, df):
     """ Cria uma tabela no banco de dados SQLite com base no DataFrame """
@@ -65,6 +71,7 @@ if uploaded_file is not None:
     # Lendo o arquivo Excel
     try:
         df = pd.read_excel(uploaded_file)
+        df = normalize_column_names(df)
         st.write("Dados do arquivo enviado:")
         st.write(df)
         
