@@ -63,10 +63,6 @@ file = st.file_uploader('Carregue um arquivo Excel', type=['xls', 'xlsx'])
 if file is not None:
     df = pd.read_excel(file)
 
-    # Exibindo os dados do arquivo Excel
-    st.write('**Dados do arquivo Excel:**')
-    st.write(df)
-
     # Criando a tabela no SQLite com base no DataFrame
     create_table_from_df(df, table_name)
 
