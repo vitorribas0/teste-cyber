@@ -36,6 +36,16 @@ def insert_data(conn, df):
     except Error as e:
         st.error(f"Erro ao inserir dados no banco de dados: {e}")
 
+# Função para obter dados do banco de dados
+def get_data(conn):
+    """ Obtém dados da tabela no banco de dados SQLite """
+    try:
+        df = pd.read_sql_query("SELECT * FROM dados", conn)
+        return df
+    except Error as e:
+        st.error(f"Erro ao obter dados do banco de dados: {e}")
+        return pd.DataFrame()
+
 # Título da aplicação
 st.title("Upload de Arquivo Excel e Inserção no Banco de Dados SQLite")
 
@@ -62,7 +72,11 @@ if uploaded_file is not None:
             # Inserindo os dados no banco de dados
             insert_data(conn, df)
             
+            # Obtendo os dados do banco de dados para exibir
             st.success("Dados inseridos com sucesso no banco de dados SQLite.")
+            st.write("Dados no banco de dados:")
+            df_from_db = get_data(conn)
+            st.write(df_from_db)
         else:
             st.error("Erro! Não foi possível criar a conexão com o banco de dados.")
             
