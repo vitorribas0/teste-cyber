@@ -9,8 +9,8 @@ def create_table_from_df(df, table_name):
     
     # Criação da tabela com colunas baseadas no DataFrame
     columns = df.columns
-    columns_with_types = ', '.join([f'{col} TEXT' for col in columns])
-    create_table_query = f'CREATE TABLE IF NOT EXISTS {table_name} (id INTEGER PRIMARY KEY AUTOINCREMENT, {columns_with_types})'
+    columns_with_types = ', '.join([f'"{col}" TEXT' for col in columns])
+    create_table_query = f'CREATE TABLE IF NOT EXISTS "{table_name}" (id INTEGER PRIMARY KEY AUTOINCREMENT, {columns_with_types})'
     c.execute(create_table_query)
     
     conn.commit()
@@ -24,7 +24,7 @@ def insert_data_from_df(df, table_name):
     # Inserindo dados do DataFrame na tabela
     for _, row in df.iterrows():
         placeholders = ', '.join(['?' for _ in row])
-        insert_query = f'INSERT INTO {table_name} ({", ".join(df.columns)}) VALUES ({placeholders})'
+        insert_query = f'INSERT INTO "{table_name}" ({", ".join([f\'"{col}"\' for col in df.columns])}) VALUES ({placeholders})'
         c.execute(insert_query, tuple(row))
     
     conn.commit()
@@ -34,7 +34,7 @@ def insert_data_from_df(df, table_name):
 def delete_table(table_name):
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
-    c.execute(f'DROP TABLE IF EXISTS {table_name}')
+    c.execute(f'DROP TABLE IF EXISTS "{table_name}"')
     conn.commit()
     conn.close()
 
