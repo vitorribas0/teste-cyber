@@ -43,6 +43,14 @@ def read_data_from_db(table_name):
     conn.close()
     return data
 
+# Função para excluir a tabela
+def delete_table(table_name):
+    conn = sqlite3.connect('data.db')
+    c = conn.cursor()
+    c.execute(f'DROP TABLE IF EXISTS "{table_name}"')
+    conn.commit()
+    conn.close()
+
 # Configuração inicial
 st.title('Upload de arquivo Excel e armazenamento seguro')
 
@@ -70,8 +78,12 @@ if file is not None:
 if st.button('Mostrar Dados do Banco de Dados'):
     data = read_data_from_db(table_name)
     if data:
+        # Criar DataFrame a partir dos dados
+        df_from_db = pd.DataFrame(data)
+
+        # Exibir DataFrame no Streamlit
         st.write('**Dados no Banco de Dados:**')
-        st.write(pd.DataFrame(data, columns=[desc[0] for desc in c.description]))
+        st.write(df_from_db)
 
 # Botão para excluir a tabela
 if st.button('Excluir Tabela'):
