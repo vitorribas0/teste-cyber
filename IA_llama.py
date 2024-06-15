@@ -35,17 +35,20 @@ if file is not None:
     st.write('**Dados do arquivo Excel:**')
     st.write(df)
 
-    # Criando a tabela no SQLite (se ainda não existir)
-    create_table()
+    # Verifica se as colunas 'Nome' e 'Idade' existem no DataFrame
+    if 'Nome' in df.columns and 'Idade' in df.columns:
+        # Criando a tabela no SQLite (se ainda não existir)
+        create_table()
 
-    # Inserindo os dados no SQLite
-    st.write('**Inserindo dados no banco de dados:**')
-    for index, row in df.iterrows():
-        insert_data(row['Nome'], row['Idade'])
-        st.write(f"Nome: {row['Nome']}, Idade: {row['Idade']} - Inserido com sucesso!")
+        # Inserindo os dados no SQLite
+        st.write('**Inserindo dados no banco de dados:**')
+        for index, row in df.iterrows():
+            insert_data(row['Nome'], row['Idade'])
+            st.write(f"Nome: {row['Nome']}, Idade: {row['Idade']} - Inserido com sucesso!")
 
-    st.success('Dados inseridos com sucesso no banco de dados.')
+        st.success('Dados inseridos com sucesso no banco de dados.')
 
-    # Mensagem final
-    st.write('**Processo concluído com sucesso!**')
-
+        # Mensagem final
+        st.write('**Processo concluído com sucesso!**')
+    else:
+        st.error("Erro: O arquivo Excel não contém as colunas esperadas ('Nome' e 'Idade'). Verifique o arquivo e tente novamente.")
