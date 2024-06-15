@@ -13,16 +13,12 @@ def create_connection(db_file):
         st.error(f"Erro ao conectar ao banco de dados: {e}")
     return conn
 
-# Função para criar uma tabela no banco de dados
-def create_table(conn):
-    """ Cria uma tabela no banco de dados SQLite """
+# Função para criar uma tabela no banco de dados com base no DataFrame
+def create_table_from_df(conn, df):
+    """ Cria uma tabela no banco de dados SQLite com base no DataFrame """
     try:
-        sql_create_table = """ CREATE TABLE IF NOT EXISTS dados (
-                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                    nome TEXT NOT NULL,
-                                    cpf TEXT NOT NULL,
-                                    email TEXT
-                                ); """
+        cols = ", ".join([f"{col} TEXT" for col in df.columns])
+        sql_create_table = f"CREATE TABLE IF NOT EXISTS dados ({cols});"
         cursor = conn.cursor()
         cursor.execute(sql_create_table)
     except Error as e:
@@ -46,6 +42,16 @@ def get_data(conn):
         st.error(f"Erro ao obter dados do banco de dados: {e}")
         return pd.DataFrame()
 
+# Função para limpar a tabela no banco de dados
+def clear_data(conn):
+    """ Limpa todos os dados da tabela no banco de dados SQLite """
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM dados")
+        conn.commit()
+    except Error as e:
+        st.error(f"Erro ao limpar dados do banco de dados: {e}")
+
 # Título da aplicação
 st.title("Upload de Arquivo Excel e Inserção no Banco de Dados SQLite")
 
@@ -66,8 +72,8 @@ if uploaded_file is not None:
         conn = create_connection("dados.db")
         
         if conn is not None:
-            # Criando a tabela se não existir
-            create_table(conn)
+            # Criando a tabela com base no DataFrame
+            create_table_from_df(conn, df)
             
             # Inserindo os dados no banco de dados
             insert_data(conn, df)
@@ -84,3 +90,14 @@ if uploaded_file is not None:
         st.error(f"Erro ao ler o arquivo: {e}")
 else:
     st.write("Nenhum arquivo enviado.")
+
+# Botão para limpar os dados do banco de dados
+st.write("Clique no botão abaixo para limpar todos os dados do banco de dados.")
+if st.button("Limpar Banco de Dados"):
+    conn = create_connection("dados.db")
+    if conn is not None:
+        clear_data(conn)
+        st.success("Todos os dados foram limpos do banco de dados.")
+        conn.close()
+    else:
+        st.error("Erro! Não foi possível criar a conexão com o banco de dados.")
