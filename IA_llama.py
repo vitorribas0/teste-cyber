@@ -31,13 +31,17 @@ def insert_data_from_df(df, table_name):
     conn.commit()
     conn.close()
 
-# Função para excluir a tabela
-def delete_table(table_name):
+# Função para ler dados do SQLite
+def read_data_from_db(table_name):
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
-    c.execute(f'DROP TABLE IF EXISTS "{table_name}"')
-    conn.commit()
+    
+    # Lendo dados da tabela
+    c.execute(f'SELECT * FROM "{table_name}"')
+    data = c.fetchall()
+    
     conn.close()
+    return data
 
 # Configuração inicial
 st.title('Upload de arquivo Excel e armazenamento seguro')
@@ -62,8 +66,12 @@ if file is not None:
     insert_data_from_df(df, table_name)
     st.success('Dados inseridos com sucesso no banco de dados.')
 
-    # Mensagem final
-    st.write('**Processo concluído com sucesso!**')
+# Botão para ler e exibir dados do banco de dados
+if st.button('Mostrar Dados do Banco de Dados'):
+    data = read_data_from_db(table_name)
+    if data:
+        st.write('**Dados no Banco de Dados:**')
+        st.write(pd.DataFrame(data, columns=[desc[0] for desc in c.description]))
 
 # Botão para excluir a tabela
 if st.button('Excluir Tabela'):
