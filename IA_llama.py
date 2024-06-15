@@ -16,7 +16,9 @@ def create_connection(db_file):
 # Função para normalizar os nomes das colunas
 def normalize_column_names(df):
     """ Normaliza os nomes das colunas removendo espaços e caracteres especiais """
-    df.columns = df.columns.str.strip().str.replace(' ', '_').str.replace(r'\W', '', regex=True)
+    for col in df.columns:
+        if df[col].dtype == 'object':  # Verifica se é uma coluna de tipo string
+            df[col] = df[col].astype(str).str.strip().str.replace(' ', '_').str.replace(r'\W', '', regex=True)
     return df
 
 # Função para criar uma tabela no banco de dados com base no DataFrame
