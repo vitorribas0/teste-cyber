@@ -113,13 +113,10 @@ table_name_excel = 'dados_excel'
 table_name_pdf = 'pdf_files'
 
 # Sidebar com botão para selecionar a funcionalidade desejada
-menu = ['Página Principal', 'Inserir Excel', 'Inserir PDF', 'Ver Dados']
-choice = st.sidebar.selectbox('Menu', menu)
+menu = ['Inserir Excel', 'Inserir PDF']
+choice = st.sidebar.selectbox('Escolha uma opção', menu)
 
-if choice == 'Página Principal':
-    st.write('Selecione uma opção no menu para começar.')
-
-elif choice == 'Inserir Excel':
+if choice == 'Inserir Excel':
     st.title('Inserir Arquivo Excel')
 
     # Upload do arquivo Excel
@@ -176,35 +173,3 @@ elif choice == 'Inserir PDF':
                 st.write('---')
         else:
             st.write('Nenhum PDF foi armazenado ainda.')
-
-elif choice == 'Ver Dados':
-    st.title('Ver Dados Armazenados')
-
-    # Botão para mostrar dados do Excel
-    if st.button('Mostrar Dados do Excel'):
-        data_excel = read_data_from_db(table_name_excel)
-        if data_excel:
-            # Criar DataFrame a partir dos dados do Excel
-            df_excel = pd.DataFrame(data_excel, columns=['ID'] + df.columns.tolist())
-
-            # Exibir DataFrame no Streamlit
-            st.write('**Dados do Excel Armazenados:**')
-            st.write(df_excel)
-        else:
-            st.write('Nenhum dado do Excel foi armazenado ainda.')
-
-    # Botão para mostrar PDFs armazenados
-    if st.button('Mostrar PDFs Armazenados'):
-        data_pdf = read_pdfs_from_db(table_name_pdf)
-        if data_pdf:
-            # Exibir PDFs no Streamlit
-            st.write('**PDFs Armazenados:**')
-            for row in data_pdf:
-                st.write(f'**Nome do arquivo:** {row[1]}')
-                # Exibindo link para baixar o PDF
-                pdf_link = f'<a href="data:application/pdf;base64,{base64.b64encode(row[2]).decode("utf-8")}" download="{row[1]}">Baixar PDF</a>'
-                st.markdown(pdf_link, unsafe_allow_html=True)
-                st.write('---')
-        else:
-            st.write('Nenhum PDF foi armazenado ainda.')
-
