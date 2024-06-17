@@ -33,14 +33,15 @@ def create_table_from_df(df, table_name):
 
 # Função para limpar dados da tabela no SQLite
 def clear_table(table_name):
-    conn = sqlite3.connect('data.db')
-    c = conn.cursor()
-    
-    # Limpar dados da tabela
-    c.execute(f'DELETE FROM "{table_name}"')
-    
-    conn.commit()
-    conn.close()
+    if table_exists(table_name):
+        conn = sqlite3.connect('data.db')
+        c = conn.cursor()
+        
+        # Limpar dados da tabela
+        c.execute(f'DELETE FROM "{table_name}"')
+        
+        conn.commit()
+        conn.close()
 
 # Função para inserir dados do Excel no SQLite
 def insert_excel_data(file, table_name):
@@ -67,6 +68,9 @@ def insert_excel_data(file, table_name):
 
 # Função para ler dados do Excel do SQLite
 def read_excel_data(table_name):
+    if not table_exists(table_name):
+        return []
+    
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
     
@@ -79,17 +83,20 @@ def read_excel_data(table_name):
 
 # Função para criar tabela de PDFs
 def create_table_for_pdfs(table_name):
-    conn = sqlite3.connect('data.db')
-    c = conn.cursor()
-    
-    # Criação da tabela para armazenar PDFs
-    c.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" (id INTEGER PRIMARY KEY AUTOINCREMENT, file_name TEXT, file_data BLOB)')
-    
-    conn.commit()
-    conn.close()
+    if not table_exists(table_name):
+        conn = sqlite3.connect('data.db')
+        c = conn.cursor()
+        
+        # Criação da tabela para armazenar PDFs
+        c.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" (id INTEGER PRIMARY KEY AUTOINCREMENT, file_name TEXT, file_data BLOB)')
+        
+        conn.commit()
+        conn.close()
 
 # Função para inserir PDF no SQLite
 def insert_pdf_into_db(file, table_name):
+    create_table_for_pdfs(table_name)
+    
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
     
@@ -104,6 +111,9 @@ def insert_pdf_into_db(file, table_name):
 
 # Função para ler dados de PDF do SQLite
 def read_pdfs_from_db(table_name):
+    if not table_exists(table_name):
+        return []
+    
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
     
