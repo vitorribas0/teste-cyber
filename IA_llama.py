@@ -38,13 +38,18 @@ def clear_table(table_name):
     conn.commit()
     conn.close()
 
-# Função para inserir dados no SQLite
-def insert_data_from_df(df, table_name):
+# Função para inserir dados do Excel no SQLite
+def insert_excel_data(file, table_name):
+    df = pd.read_excel(file)
+    
+    # Criando a tabela no SQLite com base no DataFrame, se não existir
+    create_table_from_df(df, table_name)
+    
+    # Inserindo os dados no SQLite, limpando dados antigos primeiro
+    clear_table(table_name)
+    
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
-    
-    # Limpar dados antigos antes de inserir novos dados
-    clear_table(table_name)
     
     # Inserindo dados do DataFrame na tabela
     for _, row in df.iterrows():
@@ -56,8 +61,8 @@ def insert_data_from_df(df, table_name):
     conn.commit()
     conn.close()
 
-# Função para ler dados do SQLite
-def read_data_from_db(table_name):
+# Função para ler dados do Excel do SQLite
+def read_excel_data(table_name):
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
     
@@ -67,14 +72,6 @@ def read_data_from_db(table_name):
     
     conn.close()
     return data
-
-# Função para excluir a tabela
-def delete_table(table_name):
-    conn = sqlite3.connect('data.db')
-    c = conn.cursor()
-    c.execute(f'DROP TABLE IF EXISTS "{table_name}"')
-    conn.commit()
-    conn.close()
 
 # Função para criar tabela de PDFs
 def create_table_for_pdfs(table_name):
@@ -121,7 +118,7 @@ table_name_excel = 'dados_excel'
 table_name_pdf = 'pdf_files'
 
 # Sidebar com botão para selecionar a funcionalidade desejada
-menu = ['Inserir Excel', 'Limpar Dados Excel', 'Inserir PDF', 'Limpar Dados PDF']
+menu = ['Inserir Excel', 'Inserir PDF']
 choice = st.sidebar.selectbox('Escolha uma opção', menu)
 
 if choice == 'Inserir Excel':
@@ -131,35 +128,28 @@ if choice == 'Inserir Excel':
     file = st.file_uploader('Carregue um arquivo Excel', type=['xls', 'xlsx'])
 
     if file is not None:
-        df = pd.read_excel(file)
+        # Botão para inserir dados do Excel
+        if st.button('Inserir Dados do Excel'):
+            insert_excel_data(file, table_name_excel)
+            st.success('Dados do Excel inseridos com sucesso no banco de dados.')
 
-        # Criando a tabela no SQLite com base no DataFrame, se não existir
-        create_table_from_df(df, table_name_excel)
+        # Botão para mostrar dados do Excel
+        if st.button('Mostrar Dados do Excel'):
+            data_excel = read_excel_data(table_name_excel)
+            if data_excel:
+                # Criar DataFrame a partir dos dados do Excel
+                df_excel = pd.DataFrame(data_excel, columns=['ID'] + pd.read_excel(file).columns.tolist())
 
-        # Inserindo os dados no SQLite, limpando dados antigos primeiro
-        insert_data_from_df(df, table_name_excel)
-        st.success('Dados do Excel inseridos com sucesso no banco de dados.')
+                # Exibir DataFrame no Streamlit
+                st.write('**Dados do Excel Armazenados:**')
+                st.write(df_excel)
+            else:
+                st.write('Nenhum dado do Excel foi armazenado ainda.')
 
-    # Botão para mostrar dados do Excel
-    if st.button('Mostrar Dados do Excel'):
-        data_excel = read_data_from_db(table_name_excel)
-        if data_excel:
-            # Criar DataFrame a partir dos dados do Excel
-            df_excel = pd.DataFrame(data_excel, columns=['ID'] + df.columns.tolist())
-
-            # Exibir DataFrame no Streamlit
-            st.write('**Dados do Excel Armazenados:**')
-            st.write(df_excel)
-        else:
-            st.write('Nenhum dado do Excel foi armazenado ainda.')
-
-elif choice == 'Limpar Dados Excel':
-    st.title('Limpar Dados do Excel')
-
-    # Botão para limpar dados do Excel
-    if st.button('Limpar Dados do Excel'):
-        clear_table(table_name_excel)
-        st.success('Dados do Excel foram apagados.')
+        # Botão para limpar dados do Excel
+        if st.button('Limpar Dados do Excel'):
+            clear_table(table_name_excel)
+            st.success('Dados do Excel foram apagados.')
 
 elif choice == 'Inserir PDF':
     st.title('Inserir Arquivo PDF')
@@ -168,32 +158,27 @@ elif choice == 'Inserir PDF':
     file = st.file_uploader('Carregue um arquivo PDF', type=['pdf'])
 
     if file is not None:
-        # Criando a tabela no SQLite para armazenar PDFs
-        create_table_for_pdfs(table_name_pdf)
+        # Botão para inserir PDF
+        if st.button('Inserir PDF'):
+            insert_pdf_into_db(file, table_name_pdf)
+            st.success('PDF inserido com sucesso no banco de dados.')
 
-        # Inserindo o PDF no SQLite
-        insert_pdf_into_db(file, table_name_pdf)
-        st.success('PDF inserido com sucesso no banco de dados.')
+        # Botão para mostrar PDFs armazenados
+        if st.button('Mostrar PDFs Armazenados'):
+            data_pdf = read_pdfs_from_db(table_name_pdf)
+            if data_pdf:
+                # Exibir PDFs no Streamlit
+                st.write('**PDFs Armazenados:**')
+                for row in data_pdf:
+                    st.write(f'**Nome do arquivo:** {row[1]}')
+                    # Exibindo link para baixar o PDF
+                    pdf_link = f'<a href="data:application/pdf;base64,{base64.b64encode(row[2]).decode("utf-8")}" download="{row[1]}">Baixar PDF</a>'
+                    st.markdown(pdf_link, unsafe_allow_html=True)
+                    st.write('---')
+            else:
+                st.write('Nenhum PDF foi armazenado ainda.')
 
-    # Botão para mostrar PDFs armazenados
-    if st.button('Mostrar PDFs Armazenados'):
-        data_pdf = read_pdfs_from_db(table_name_pdf)
-        if data_pdf:
-            # Exibir PDFs no Streamlit
-            st.write('**PDFs Armazenados:**')
-            for row in data_pdf:
-                st.write(f'**Nome do arquivo:** {row[1]}')
-                # Exibindo link para baixar o PDF
-                pdf_link = f'<a href="data:application/pdf;base64,{base64.b64encode(row[2]).decode("utf-8")}" download="{row[1]}">Baixar PDF</a>'
-                st.markdown(pdf_link, unsafe_allow_html=True)
-                st.write('---')
-        else:
-            st.write('Nenhum PDF foi armazenado ainda.')
-
-elif choice == 'Limpar Dados PDF':
-    st.title('Limpar Dados de PDF')
-
-    # Botão para limpar dados de PDF
-    if st.button('Limpar Dados de PDF'):
-        clear_table(table_name_pdf)
-        st.success('Dados de PDF foram apagados.')
+        # Botão para limpar dados de PDF
+        if st.button('Limpar Dados de PDF'):
+            clear_table(table_name_pdf)
+            st.success('Dados de PDF foram apagados.')
