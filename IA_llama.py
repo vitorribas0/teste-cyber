@@ -63,7 +63,7 @@ choice = st.sidebar.selectbox('Menu', menu)
 
 if choice == 'Excel':
     # Upload do arquivo Excel
-    file = st.file_uploader('Carregue um arquivo Excel', type=['xls', 'xlsx'])
+    file = st.file_uploader('Carregue um arquivo Excel', type=['xls', 'xlsx','pdf])
 
     if file is not None:
         df = pd.read_excel(file)
