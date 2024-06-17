@@ -140,6 +140,11 @@ if choice == 'Inserir Excel':
             if st.button('Inserir Dados do Excel'):
                 insert_excel_data(file, table_name_excel)
                 st.success('Dados do Excel inseridos com sucesso no banco de dados.')
+            
+            # Botão para limpar dados do Excel
+            if st.button('Limpar Dados do Excel'):
+                clear_table(table_name_excel)
+                st.warning('Dados do Excel foram removidos do banco de dados.')
 
 elif choice == 'Inserir PDF':
     st.title('Inserir Arquivo PDF')
@@ -156,6 +161,11 @@ elif choice == 'Inserir PDF':
             if st.button('Inserir PDF'):
                 insert_pdf_into_db(file, table_name_pdf)
                 st.success('PDF inserido com sucesso no banco de dados.')
+            
+            # Botão para limpar dados do PDF
+            if st.button('Limpar Dados do PDF'):
+                clear_table(table_name_pdf)
+                st.warning('Dados do PDF foram removidos do banco de dados.')
 
 # Mostrar dados armazenados (deve estar sempre presente)
 st.subheader('Dados Armazenados')
