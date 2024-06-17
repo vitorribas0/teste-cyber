@@ -57,31 +57,59 @@ st.title('Upload de arquivo Excel e armazenamento seguro')
 # Nome da tabela no banco de dados
 table_name = 'dados_excel'
 
-# Upload do arquivo Excel
-file = st.file_uploader('Carregue um arquivo Excel', type=['xls', 'xlsx'])
+# Sidebar com botão para ir para a página de inserção de texto
+menu = ['Página Principal', 'Inserir Texto']
+choice = st.sidebar.selectbox('Menu', menu)
 
-if file is not None:
-    df = pd.read_excel(file)
+if choice == 'Página Principal':
+    # Upload do arquivo Excel
+    file = st.file_uploader('Carregue um arquivo Excel', type=['xls', 'xlsx'])
 
-    # Criando a tabela no SQLite com base no DataFrame
-    create_table_from_df(df, table_name)
+    if file is not None:
+        df = pd.read_excel(file)
 
-    # Inserindo os dados no SQLite
-    insert_data_from_df(df, table_name)
-    st.success('Dados inseridos com sucesso no banco de dados.')
+        # Criando a tabela no SQLite com base no DataFrame
+        create_table_from_df(df, table_name)
 
-# Botão para ler e exibir dados do banco de dados
-if st.button('Mostrar Dados do Banco de Dados'):
-    data = read_data_from_db(table_name)
-    if data:
-        # Criar DataFrame a partir dos dados
-        df_from_db = pd.DataFrame(data)
+        # Inserindo os dados no SQLite
+        insert_data_from_df(df, table_name)
+        st.success('Dados inseridos com sucesso no banco de dados.')
 
-        # Exibir DataFrame no Streamlit
-        st.write('**Dados no Banco de Dados:**')
-        st.write(df_from_db)
+    # Botão para ler e exibir dados do banco de dados
+    if st.button('Mostrar Dados do Banco de Dados'):
+        data = read_data_from_db(table_name)
+        if data:
+            # Criar DataFrame a partir dos dados
+            df_from_db = pd.DataFrame(data)
 
-# Botão para excluir a tabela
-if st.button('Excluir Tabela'):
-    delete_table(table_name)
-    st.success('Tabela excluída com sucesso.')
+            # Exibir DataFrame no Streamlit
+            st.write('**Dados no Banco de Dados:**')
+            st.write(df_from_db)
+
+    # Botão para excluir a tabela
+    if st.button('Excluir Tabela'):
+        delete_table(table_name)
+        st.success('Tabela excluída com sucesso.')
+
+elif choice == 'Inserir Texto':
+    st.title('Inserir Texto para Armazenar no Banco de Dados')
+    texto = st.text_area('Digite o texto que deseja armazenar:')
+    
+    if st.button('Salvar no Banco de Dados'):
+        conn = sqlite3.connect('data.db')
+        c = conn.cursor()
+        
+        # Criando uma tabela específica para texto, se não existir
+        c.execute('''CREATE TABLE IF NOT EXISTS textos (
+                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                     texto TEXT
+                     )''')
+        
+        # Inserindo o texto na tabela
+        c.execute('INSERT INTO textos (texto) VALUES (?)', (texto,))
+        
+        conn.commit()
+        conn.close()
+        
+        st.success('Texto armazenado com sucesso no banco de dados.')
+
