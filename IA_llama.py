@@ -146,11 +146,6 @@ if choice == 'Inserir Excel':
             else:
                 st.write('Nenhum dado do Excel foi armazenado ainda.')
 
-        # Botão para limpar dados do Excel
-        if st.button('Limpar Dados do Excel'):
-            clear_table(table_name_excel)
-            st.success('Dados do Excel foram apagados.')
-
 elif choice == 'Inserir PDF':
     st.title('Inserir Arquivo PDF')
 
@@ -178,7 +173,25 @@ elif choice == 'Inserir PDF':
             else:
                 st.write('Nenhum PDF foi armazenado ainda.')
 
-        # Botão para limpar dados de PDF
-        if st.button('Limpar Dados de PDF'):
-            clear_table(table_name_pdf)
-            st.success('Dados de PDF foram apagados.')
+# Botão para mostrar dados (deve estar disponível em ambos os menus)
+if st.button('Mostrar Dados'):
+    if choice == 'Inserir Excel':
+        data_excel = read_excel_data(table_name_excel)
+        if data_excel:
+            df_excel = pd.DataFrame(data_excel, columns=['ID'] + pd.read_excel(file).columns.tolist())
+            st.write('**Dados do Excel Armazenados:**')
+            st.write(df_excel)
+        else:
+            st.write('Nenhum dado do Excel foi armazenado ainda.')
+
+    elif choice == 'Inserir PDF':
+        data_pdf = read_pdfs_from_db(table_name_pdf)
+        if data_pdf:
+            st.write('**PDFs Armazenados:**')
+            for row in data_pdf:
+                st.write(f'**Nome do arquivo:** {row[1]}')
+                pdf_link = f'<a href="data:application/pdf;base64,{base64.b64encode(row[2]).decode("utf-8")}" download="{row[1]}">Baixar PDF</a>'
+                st.markdown(pdf_link, unsafe_allow_html=True)
+                st.write('---')
+        else:
+            st.write('Nenhum PDF foi armazenado ainda.')
