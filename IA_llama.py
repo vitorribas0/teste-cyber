@@ -3,6 +3,10 @@ import pandas as pd
 import sqlite3
 import base64
 
+# Aumentando o limite de upload para 2 GB (2048 MB)
+st.set_option('deprecation.showfileUploaderEncoding', False)
+MAX_UPLOAD_SIZE = 2048
+
 # Função para verificar se a tabela existe no SQLite
 def table_exists(table_name):
     conn = sqlite3.connect('data.db')
@@ -124,8 +128,8 @@ choice = st.sidebar.selectbox('Escolha uma opção', menu)
 if choice == 'Inserir Excel':
     st.title('Inserir Arquivo Excel')
 
-    # Upload do arquivo Excel
-    file = st.file_uploader('Carregue um arquivo Excel', type=['xls', 'xlsx'])
+    # Upload do arquivo Excel com limite aumentado
+    file = st.file_uploader('Carregue um arquivo Excel (limite 2 GB)', type=['xls', 'xlsx'], max_value=MAX_UPLOAD_SIZE)
 
     if file is not None:
         # Botão para inserir dados do Excel
@@ -136,8 +140,8 @@ if choice == 'Inserir Excel':
 elif choice == 'Inserir PDF':
     st.title('Inserir Arquivo PDF')
 
-    # Upload do arquivo PDF
-    file = st.file_uploader('Carregue um arquivo PDF', type=['pdf'])
+    # Upload do arquivo PDF com limite aumentado
+    file = st.file_uploader('Carregue um arquivo PDF (limite 2 GB)', type=['pdf'], max_value=MAX_UPLOAD_SIZE)
 
     if file is not None:
         # Botão para inserir PDF
