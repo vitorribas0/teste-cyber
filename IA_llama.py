@@ -61,7 +61,7 @@ table_name = 'dados_excel'
 menu = ['Excel', 'Inserir Texto', 'Ver Textos Armazenados']
 choice = st.sidebar.selectbox('Menu', menu)
 
-if choice == 'Página Principal':
+if choice == 'Excel':
     # Upload do arquivo Excel
     file = st.file_uploader('Carregue um arquivo Excel', type=['xls', 'xlsx'])
 
