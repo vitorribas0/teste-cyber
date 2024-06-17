@@ -27,25 +27,33 @@ def create_table_from_df(df, table_name):
         conn.commit()
         conn.close()
 
-# Função para inserir dados no SQLite se a tabela estiver vazia
+# Função para limpar dados da tabela no SQLite
+def clear_table(table_name):
+    conn = sqlite3.connect('data.db')
+    c = conn.cursor()
+    
+    # Limpar dados da tabela
+    c.execute(f'DELETE FROM "{table_name}"')
+    
+    conn.commit()
+    conn.close()
+
+# Função para inserir dados no SQLite
 def insert_data_from_df(df, table_name):
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
     
-    # Verificar se existem dados na tabela
-    c.execute(f'SELECT COUNT(*) FROM "{table_name}"')
-    count = c.fetchone()[0]
+    # Limpar dados antigos antes de inserir novos dados
+    clear_table(table_name)
     
-    if count == 0:
-        # Inserindo dados do DataFrame na tabela
-        for _, row in df.iterrows():
-            placeholders = ', '.join(['?' for _ in row])
-            columns = ', '.join([f'"{col}"' for col in df.columns])
-            insert_query = f'INSERT INTO "{table_name}" ({columns}) VALUES ({placeholders})'
-            c.execute(insert_query, tuple(row))
-        
-        conn.commit()
+    # Inserindo dados do DataFrame na tabela
+    for _, row in df.iterrows():
+        placeholders = ', '.join(['?' for _ in row])
+        columns = ', '.join([f'"{col}"' for col in df.columns])
+        insert_query = f'INSERT INTO "{table_name}" ({columns}) VALUES ({placeholders})'
+        c.execute(insert_query, tuple(row))
     
+    conn.commit()
     conn.close()
 
 # Função para ler dados do SQLite
@@ -113,7 +121,7 @@ table_name_excel = 'dados_excel'
 table_name_pdf = 'pdf_files'
 
 # Sidebar com botão para selecionar a funcionalidade desejada
-menu = ['Inserir Excel', 'Inserir PDF']
+menu = ['Inserir Excel', 'Limpar Dados Excel', 'Inserir PDF', 'Limpar Dados PDF']
 choice = st.sidebar.selectbox('Escolha uma opção', menu)
 
 if choice == 'Inserir Excel':
@@ -128,7 +136,7 @@ if choice == 'Inserir Excel':
         # Criando a tabela no SQLite com base no DataFrame, se não existir
         create_table_from_df(df, table_name_excel)
 
-        # Inserindo os dados no SQLite, se a tabela estiver vazia
+        # Inserindo os dados no SQLite, limpando dados antigos primeiro
         insert_data_from_df(df, table_name_excel)
         st.success('Dados do Excel inseridos com sucesso no banco de dados.')
 
@@ -144,6 +152,14 @@ if choice == 'Inserir Excel':
             st.write(df_excel)
         else:
             st.write('Nenhum dado do Excel foi armazenado ainda.')
+
+elif choice == 'Limpar Dados Excel':
+    st.title('Limpar Dados do Excel')
+
+    # Botão para limpar dados do Excel
+    if st.button('Limpar Dados do Excel'):
+        clear_table(table_name_excel)
+        st.success('Dados do Excel foram apagados.')
 
 elif choice == 'Inserir PDF':
     st.title('Inserir Arquivo PDF')
@@ -173,3 +189,11 @@ elif choice == 'Inserir PDF':
                 st.write('---')
         else:
             st.write('Nenhum PDF foi armazenado ainda.')
+
+elif choice == 'Limpar Dados PDF':
+    st.title('Limpar Dados de PDF')
+
+    # Botão para limpar dados de PDF
+    if st.button('Limpar Dados de PDF'):
+        clear_table(table_name_pdf)
+        st.success('Dados de PDF foram apagados.')
