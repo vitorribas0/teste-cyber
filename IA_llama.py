@@ -58,7 +58,7 @@ st.title('Upload de arquivo Excel e armazenamento seguro')
 table_name = 'dados_excel'
 
 # Sidebar com botão para ir para a página de inserção de texto
-menu = ['Página Principal', 'Inserir Texto']
+menu = ['Página Principal', 'Inserir Texto', 'Ver Textos Armazenados']
 choice = st.sidebar.selectbox('Menu', menu)
 
 if choice == 'Página Principal':
@@ -112,4 +112,27 @@ elif choice == 'Inserir Texto':
         conn.close()
         
         st.success('Texto armazenado com sucesso no banco de dados.')
+
+elif choice == 'Ver Textos Armazenados':
+    st.title('Textos Armazenados no Banco de Dados')
+    
+    # Função para ler e exibir textos armazenados
+    conn = sqlite3.connect('data.db')
+    c = conn.cursor()
+    
+    # Lendo dados da tabela 'textos'
+    c.execute('SELECT * FROM textos')
+    data = c.fetchall()
+    
+    conn.close()
+    
+    if data:
+        # Criar DataFrame a partir dos dados
+        df_textos = pd.DataFrame(data, columns=['ID', 'Texto'])
+
+        # Exibir DataFrame no Streamlit
+        st.write('**Textos Armazenados:**')
+        st.write(df_textos)
+    else:
+        st.write('Nenhum texto foi armazenado ainda.')
 
