@@ -119,6 +119,19 @@ elif choice == 'Inserir Excel':
         insert_data_from_df(df, table_name_excel)
         st.success('Dados do Excel inseridos com sucesso no banco de dados.')
 
+    # Botão para mostrar dados do Excel
+    if st.button('Mostrar Dados do Excel'):
+        data_excel = read_data_from_db(table_name_excel)
+        if data_excel:
+            # Criar DataFrame a partir dos dados do Excel
+            df_excel = pd.DataFrame(data_excel, columns=['ID'] + df.columns.tolist())
+
+            # Exibir DataFrame no Streamlit
+            st.write('**Dados do Excel Armazenados:**')
+            st.write(df_excel)
+        else:
+            st.write('Nenhum dado do Excel foi armazenado ainda.')
+
 elif choice == 'Inserir PDF':
     st.title('Inserir Arquivo PDF')
 
@@ -133,8 +146,23 @@ elif choice == 'Inserir PDF':
         insert_pdf_into_db(file, table_name_pdf)
         st.success('PDF inserido com sucesso no banco de dados.')
 
+    # Botão para mostrar PDFs armazenados
+    if st.button('Mostrar PDFs Armazenados'):
+        data_pdf = read_pdfs_from_db(table_name_pdf)
+        if data_pdf:
+            # Exibir PDFs no Streamlit
+            st.write('**PDFs Armazenados:**')
+            for row in data_pdf:
+                st.write(f'**Nome do arquivo:** {row[1]}')
+                # Exibindo link para baixar o PDF
+                pdf_link = f'<a href="data:application/pdf;base64,{base64.b64encode(row[2]).decode("utf-8")}" download="{row[1]}">Baixar PDF</a>'
+                st.markdown(pdf_link, unsafe_allow_html=True)
+                st.write('---')
+        else:
+            st.write('Nenhum PDF foi armazenado ainda.')
+
 elif choice == 'Ver Dados':
-    st.title('Dados Armazenados')
+    st.title('Ver Dados Armazenados')
 
     # Botão para mostrar dados do Excel
     if st.button('Mostrar Dados do Excel'):
@@ -149,7 +177,7 @@ elif choice == 'Ver Dados':
         else:
             st.write('Nenhum dado do Excel foi armazenado ainda.')
 
-    # Botão para mostrar dados de PDF
+    # Botão para mostrar PDFs armazenados
     if st.button('Mostrar PDFs Armazenados'):
         data_pdf = read_pdfs_from_db(table_name_pdf)
         if data_pdf:
