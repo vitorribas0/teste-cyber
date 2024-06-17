@@ -1,9 +1,7 @@
 import streamlit as st
-import pandas as pd
-import sqlite3
-import base64
 
-# ... (o resto do código permanece o mesmo)
+# Variável para armazenar o texto
+text_var = ''
 
 # Novo menu para inserir texto e guardar em uma variável
 menu_text = ['Inserir Texto']
@@ -17,12 +15,13 @@ if choice_text == 'Inserir Texto':
 
     # Botão para guardar texto em uma variável
     if st.button('Guardar Texto'):
+        global text_var
         text_var = text_input
         st.success('Texto guardado com sucesso!')
 
     # Botão para baixar Excel da variável
     if st.button('Baixar Excel'):
-        if 'text_var' in locals():
+        if text_var:
             # Criar um DataFrame com a variável de texto
             df = pd.DataFrame({'Texto': [text_var]})
 
