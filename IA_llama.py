@@ -1,32 +1,29 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
+import base64
 
 # Função para criar a tabela no SQLite com colunas dinâmicas
-def create_table_from_df(df, table_name):
+def create_table_from_pdf(table_name):
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
     
-    # Criação da tabela com colunas baseadas no DataFrame
-    columns = df.columns
-    columns_with_types = ', '.join([f'"{col}" TEXT' for col in columns])
-    create_table_query = f'CREATE TABLE IF NOT EXISTS "{table_name}" (id INTEGER PRIMARY KEY AUTOINCREMENT, {columns_with_types})'
-    c.execute(create_table_query)
+    # Criação da tabela para armazenar PDF
+    c.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" (id INTEGER PRIMARY KEY AUTOINCREMENT, file_name TEXT, file_data BLOB)')
     
     conn.commit()
     conn.close()
 
-# Função para inserir dados no SQLite
-def insert_data_from_df(df, table_name):
+# Função para inserir PDF no SQLite
+def insert_pdf_into_db(file, table_name):
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
     
-    # Inserindo dados do DataFrame na tabela
-    for _, row in df.iterrows():
-        placeholders = ', '.join(['?' for _ in row])
-        columns = ', '.join([f'"{col}"' for col in df.columns])
-        insert_query = f'INSERT INTO "{table_name}" ({columns}) VALUES ({placeholders})'
-        c.execute(insert_query, tuple(row))
+    # Lendo o conteúdo do arquivo PDF
+    pdf_content = file.read()
+    
+    # Inserindo o PDF na tabela
+    c.execute('INSERT INTO "{table_name}" (file_name, file_data) VALUES (?, ?)', (file.name, sqlite3.Binary(pdf_content)))
     
     conn.commit()
     conn.close()
@@ -52,87 +49,67 @@ def delete_table(table_name):
     conn.close()
 
 # Configuração inicial
-st.title('Upload de arquivo Excel e armazenamento seguro')
+st.title('Upload de arquivo PDF e armazenamento seguro')
 
 # Nome da tabela no banco de dados
-table_name = 'dados_excel'
+table_name = 'pdf_files'
 
-# Sidebar com botão para ir para a página de inserção de texto
-menu = ['Excel', 'Inserir Texto', 'Ver Textos Armazenados']
+# Sidebar com opções
+menu = ['Página Principal', 'Ver PDFs Armazenados']
 choice = st.sidebar.selectbox('Menu', menu)
 
-if choice == 'Excel':
-    # Upload do arquivo Excel
-    file = st.file_uploader('Carregue um arquivo Excel', type=['xls', 'xlsx','pdf])
+if choice == 'Página Principal':
+    # Upload do arquivo PDF
+    file = st.file_uploader('Carregue um arquivo PDF', type=['pdf'])
 
     if file is not None:
-        df = pd.read_excel(file)
+        # Criando a tabela no SQLite para armazenar PDFs
+        create_table_from_pdf(table_name)
 
-        # Criando a tabela no SQLite com base no DataFrame
-        create_table_from_df(df, table_name)
-
-        # Inserindo os dados no SQLite
-        insert_data_from_df(df, table_name)
-        st.success('Dados inseridos com sucesso no banco de dados.')
+        # Inserindo o PDF no SQLite
+        insert_pdf_into_db(file, table_name)
+        st.success('PDF inserido com sucesso no banco de dados.')
 
     # Botão para ler e exibir dados do banco de dados
-    if st.button('Mostrar Dados do Banco de Dados'):
+    if st.button('Mostrar PDFs Armazenados'):
         data = read_data_from_db(table_name)
         if data:
-            # Criar DataFrame a partir dos dados
-            df_from_db = pd.DataFrame(data)
-
-            # Exibir DataFrame no Streamlit
-            st.write('**Dados no Banco de Dados:**')
-            st.write(df_from_db)
+            # Exibir PDFs no Streamlit
+            st.write('**PDFs Armazenados:**')
+            for row in data:
+                st.write(f'**Nome do arquivo:** {row[1]}')
+                # Exibindo link para baixar o PDF
+                pdf_link = f'<a href="data:application/pdf;base64,{base64.b64encode(row[2]).decode("utf-8")}" download="{row[1]}">Baixar PDF</a>'
+                st.markdown(pdf_link, unsafe_allow_html=True)
+                st.write('---')
 
     # Botão para excluir a tabela
     if st.button('Excluir Tabela'):
         delete_table(table_name)
         st.success('Tabela excluída com sucesso.')
 
-elif choice == 'Inserir Texto':
-    st.title('Inserir Texto para Armazenar no Banco de Dados')
-    texto = st.text_area('Digite o texto que deseja armazenar:')
+elif choice == 'Ver PDFs Armazenados':
+    st.title('PDFs Armazenados no Banco de Dados')
     
-    if st.button('Salvar no Banco de Dados'):
-        conn = sqlite3.connect('data.db')
-        c = conn.cursor()
-        
-        # Criando uma tabela específica para texto, se não existir
-        c.execute('''CREATE TABLE IF NOT EXISTS textos (
-                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                     texto TEXT
-                     )''')
-        
-        # Inserindo o texto na tabela
-        c.execute('INSERT INTO textos (texto) VALUES (?)', (texto,))
-        
-        conn.commit()
-        conn.close()
-        
-        st.success('Texto armazenado com sucesso no banco de dados.')
-
-elif choice == 'Ver Textos Armazenados':
-    st.title('Textos Armazenados no Banco de Dados')
-    
-    # Função para ler e exibir textos armazenados
+    # Função para ler e exibir PDFs armazenados
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
     
-    # Lendo dados da tabela 'textos'
-    c.execute('SELECT * FROM textos')
+    # Lendo dados da tabela 'pdf_files'
+    c.execute('SELECT * FROM pdf_files')
     data = c.fetchall()
     
     conn.close()
     
     if data:
-        # Criar DataFrame a partir dos dados
-        df_textos = pd.DataFrame(data, columns=['ID', 'Texto'])
-
-        # Exibir DataFrame no Streamlit
-        st.write('**Textos Armazenados:**')
-        st.write(df_textos)
+        # Exibir PDFs no Streamlit
+        st.write('**PDFs Armazenados:**')
+        for row in data:
+            st.write(f'**Nome do arquivo:** {row[1]}')
+            # Exibindo link para baixar o PDF
+            pdf_link = f'<a href="data:application/pdf;base64,{base64.b64encode(row[2]).decode("utf-8")}" download="{row[1]}">Baixar PDF</a>'
+            st.markdown(pdf_link, unsafe_allow_html=True)
+            st.write('---')
     else:
-        st.write('Nenhum texto foi armazenado ainda.')
+        st.write('Nenhum PDF foi armazenado ainda.')
 
