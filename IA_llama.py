@@ -1,16 +1,9 @@
-```
 import streamlit as st
-import xlsxwriter
 
-st.title("Campo de texto e resultado")
+# Criar um campo de texto
+texto = st.text_input("Insira o texto:", "")
 
-texto_usuario = ""
-
-texto = st.text_input(" Digite seu texto ")
-
-if st.button("Gerar documento"):
-    texto_usuario = texto
-    with st.expander("Resultado"):
-        st.write(texto_usuario)
-    st.write("O texto digitado será armazenado em um arquivo Excel.")
-    st.write("Clique em 'Gerar documento' novamente para baixar o arquivo.")
+# Criar uma tabela para mostrar o texto
+if texto:
+    table = [[texto]]
+    st.table(table)
