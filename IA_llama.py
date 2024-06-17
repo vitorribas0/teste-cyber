@@ -58,7 +58,7 @@ st.title('Upload de arquivo Excel e armazenamento seguro')
 table_name = 'dados_excel'
 
 # Sidebar com botão para ir para a página de inserção de texto
-menu = ['Página Principal', 'Inserir Texto', 'Ver Textos Armazenados']
+menu = ['Excel', 'Inserir Texto', 'Ver Textos Armazenados']
 choice = st.sidebar.selectbox('Menu', menu)
 
 if choice == 'Página Principal':
