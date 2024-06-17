@@ -3,33 +3,49 @@ import pandas as pd
 import sqlite3
 import base64
 
-# Função para criar a tabela no SQLite com colunas dinâmicas
-def create_table_from_df(df, table_name):
+# Função para verificar se a tabela existe no SQLite
+def table_exists(table_name):
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
-    
-    # Criação da tabela com colunas baseadas no DataFrame
-    columns = df.columns
-    columns_with_types = ', '.join([f'"{col}" TEXT' for col in columns])
-    create_table_query = f'CREATE TABLE IF NOT EXISTS "{table_name}" (id INTEGER PRIMARY KEY AUTOINCREMENT, {columns_with_types})'
-    c.execute(create_table_query)
-    
-    conn.commit()
+    c.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'")
+    result = c.fetchone()
     conn.close()
+    return result is not None
 
-# Função para inserir dados no SQLite
+# Função para criar a tabela no SQLite com colunas dinâmicas se não existir
+def create_table_from_df(df, table_name):
+    if not table_exists(table_name):
+        conn = sqlite3.connect('data.db')
+        c = conn.cursor()
+        
+        # Criação da tabela com colunas baseadas no DataFrame
+        columns = df.columns
+        columns_with_types = ', '.join([f'"{col}" TEXT' for col in columns])
+        create_table_query = f'CREATE TABLE "{table_name}" (id INTEGER PRIMARY KEY AUTOINCREMENT, {columns_with_types})'
+        c.execute(create_table_query)
+        
+        conn.commit()
+        conn.close()
+
+# Função para inserir dados no SQLite se a tabela estiver vazia
 def insert_data_from_df(df, table_name):
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
     
-    # Inserindo dados do DataFrame na tabela
-    for _, row in df.iterrows():
-        placeholders = ', '.join(['?' for _ in row])
-        columns = ', '.join([f'"{col}"' for col in df.columns])
-        insert_query = f'INSERT INTO "{table_name}" ({columns}) VALUES ({placeholders})'
-        c.execute(insert_query, tuple(row))
+    # Verificar se existem dados na tabela
+    c.execute(f'SELECT COUNT(*) FROM "{table_name}"')
+    count = c.fetchone()[0]
     
-    conn.commit()
+    if count == 0:
+        # Inserindo dados do DataFrame na tabela
+        for _, row in df.iterrows():
+            placeholders = ', '.join(['?' for _ in row])
+            columns = ', '.join([f'"{col}"' for col in df.columns])
+            insert_query = f'INSERT INTO "{table_name}" ({columns}) VALUES ({placeholders})'
+            c.execute(insert_query, tuple(row))
+        
+        conn.commit()
+    
     conn.close()
 
 # Função para ler dados do SQLite
@@ -112,10 +128,10 @@ elif choice == 'Inserir Excel':
     if file is not None:
         df = pd.read_excel(file)
 
-        # Criando a tabela no SQLite com base no DataFrame
+        # Criando a tabela no SQLite com base no DataFrame, se não existir
         create_table_from_df(df, table_name_excel)
 
-        # Inserindo os dados no SQLite
+        # Inserindo os dados no SQLite, se a tabela estiver vazia
         insert_data_from_df(df, table_name_excel)
         st.success('Dados do Excel inseridos com sucesso no banco de dados.')
 
