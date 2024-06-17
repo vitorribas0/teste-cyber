@@ -5,7 +5,7 @@ import base64
 
 # Aumentando o limite de upload para 2 GB (2048 MB)
 st.set_option('deprecation.showfileUploaderEncoding', False)
-MAX_UPLOAD_SIZE = 2048
+MAX_UPLOAD_SIZE = 2048 * 1024 * 1024  # 2 GB em bytes
 
 # Função para verificar se a tabela existe no SQLite
 def table_exists(table_name):
@@ -128,26 +128,34 @@ choice = st.sidebar.selectbox('Escolha uma opção', menu)
 if choice == 'Inserir Excel':
     st.title('Inserir Arquivo Excel')
 
-    # Upload do arquivo Excel com limite aumentado
-    file = st.file_uploader('Carregue um arquivo Excel (limite 2 GB)', type=['xls', 'xlsx'], max_value=MAX_UPLOAD_SIZE)
+    # Upload do arquivo Excel
+    file = st.file_uploader('Carregue um arquivo Excel', type=['xls', 'xlsx'])
 
     if file is not None:
-        # Botão para inserir dados do Excel
-        if st.button('Inserir Dados do Excel'):
-            insert_excel_data(file, table_name_excel)
-            st.success('Dados do Excel inseridos com sucesso no banco de dados.')
+        # Verifica o tamanho do arquivo Excel
+        if len(file.getvalue()) > MAX_UPLOAD_SIZE:
+            st.error(f'O arquivo selecionado excede o limite máximo de {MAX_UPLOAD_SIZE / (1024 * 1024)} MB.')
+        else:
+            # Botão para inserir dados do Excel
+            if st.button('Inserir Dados do Excel'):
+                insert_excel_data(file, table_name_excel)
+                st.success('Dados do Excel inseridos com sucesso no banco de dados.')
 
 elif choice == 'Inserir PDF':
     st.title('Inserir Arquivo PDF')
 
-    # Upload do arquivo PDF com limite aumentado
-    file = st.file_uploader('Carregue um arquivo PDF (limite 2 GB)', type=['pdf'], max_value=MAX_UPLOAD_SIZE)
+    # Upload do arquivo PDF
+    file = st.file_uploader('Carregue um arquivo PDF', type=['pdf'])
 
     if file is not None:
-        # Botão para inserir PDF
-        if st.button('Inserir PDF'):
-            insert_pdf_into_db(file, table_name_pdf)
-            st.success('PDF inserido com sucesso no banco de dados.')
+        # Verifica o tamanho do arquivo PDF
+        if len(file.getvalue()) > MAX_UPLOAD_SIZE:
+            st.error(f'O arquivo selecionado excede o limite máximo de {MAX_UPLOAD_SIZE / (1024 * 1024)} MB.')
+        else:
+            # Botão para inserir PDF
+            if st.button('Inserir PDF'):
+                insert_pdf_into_db(file, table_name_pdf)
+                st.success('PDF inserido com sucesso no banco de dados.')
 
 # Mostrar dados armazenados (deve estar sempre presente)
 st.subheader('Dados Armazenados')
