@@ -107,9 +107,9 @@ def read_pdfs_from_db(table_name):
 # Função para converter DataFrame para download em Excel
 def to_excel(df):
     output = BytesIO()
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    df.to_excel(writer, index=False, sheet_name='Sheet1')
-    writer.save()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Sheet1')
+        writer.save()
     processed_data = output.getvalue()
     return processed_data
 
@@ -179,7 +179,8 @@ if choice == 'Inserir Excel':
     data_excel = read_excel_data(table_name_excel)
     if data_excel:
         # Criar DataFrame a partir dos dados do Excel
-        df_excel = pd.DataFrame(data_excel, columns=['ID'] + list(pd.read_sql_query(f'SELECT * FROM "{table_name_excel}" LIMIT 1', sqlite3.connect('data.db')).columns)[1:])
+        columns = [desc[0] for desc in sqlite3.connect('data.db').cursor().execute(f'PRAGMA table_info({table_name_excel})').fetchall()]
+        df_excel = pd.DataFrame(data_excel, columns=columns)
         # Exibir DataFrame no Streamlit
         st.write('**Dados do Excel Armazenados:**')
         st.write(df_excel)
