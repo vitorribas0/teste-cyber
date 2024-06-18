@@ -1,11 +1,12 @@
 import streamlit as st
 import pandas as pd
 import base64
+from io import BytesIO
 import os
 
 # Aumentando o limite de upload para 2 GB (2048 MB)
 st.set_option('deprecation.showfileUploaderEncoding', False)
-MAX_UPLOAD_SIZE = 2048 * 1024 * 1024  # 2 GB em bytes
+MAX_UPLOAD_SIZE = 2048 * 1024 * 1024 # 2 GB em bytes
 
 # Função para converter DataFrame para download em Excel
 def to_excel(df):
@@ -25,16 +26,30 @@ def read_df_from_csv(filename):
         return pd.read_csv(filename)
     return pd.DataFrame()
 
+# Função para salvar PDF
+def save_pdf(file, directory='pdf_files'):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    file_path = os.path.join(directory, file.name)
+    with open(file_path, 'wb') as f:
+        f.write(file.read())
+    return file_path
+
+# Função para ler lista de PDFs
+def list_pdfs(directory='pdf_files'):
+    if os.path.exists(directory):
+        return [f for f in os.listdir(directory) if f.endswith('.pdf')]
+    return []
+
 # Configuração inicial
 st.title('Upload de arquivo Excel/PDF e inserir texto')
 
-# Nome dos arquivos para armazenamento
+# Nome dos arquivos e diretórios para armazenamento
 csv_file_excel = 'dados_excel.csv'
 pdf_directory = 'pdf_files'
-csv_file_texto = 'dados_texto.csv'
 
 # Sidebar com botão para selecionar a funcionalidade desejada
-menu = ['Inserir Excel', 'Inserir PDF', 'Inserir Texto']
+menu = ['Inserir Excel', 'Inserir PDF', 'Inserir Texto e Baixar Excel']
 choice = st.sidebar.selectbox('Escolha uma opção', menu)
 
 if choice == 'Inserir Excel':
@@ -65,66 +80,48 @@ elif choice == 'Inserir PDF':
             st.error(f'O arquivo selecionado excede o limite máximo de {MAX_UPLOAD_SIZE / (1024 * 1024)} MB.')
         else:
             if st.button('Inserir PDF'):
-                if not os.path.exists(pdf_directory):
-                    os.makedirs(pdf_directory)
-                file_path = os.path.join(pdf_directory, file.name)
-                with open(file_path, 'wb') as f:
-                    f.write(file.read())
+                save_pdf(file, pdf_directory)
                 st.success('PDF inserido com sucesso.')
             if st.button('Limpar Dados do PDF'):
-                pdf_files = os.listdir(pdf_directory)
+                pdf_files = list_pdfs(pdf_directory)
                 for pdf_file in pdf_files:
                     os.remove(os.path.join(pdf_directory, pdf_file))
                 st.warning('Dados do PDF foram removidos.')
 
-elif choice == 'Inserir Texto':
-    st.title('Inserir Texto')
+elif choice == 'Inserir Texto e Baixar Excel':
+    st.title('Inserir Texto e Baixar Excel')
 
     # Campo de texto para entrada de dados
     text = st.text_area('Insira seu texto aqui')
 
-    # Botão para salvar o texto
-    if st.button('Salvar Texto'):
-        df_texto = pd.DataFrame({'Texto': [text]})
-        save_df_to_csv(df_texto, csv_file_texto)
-        st.success('Texto salvo com sucesso.')
-
-    # Botão para limpar o texto
-    if st.button('Limpar Texto'):
-        if os.path.exists(csv_file_texto):
-            os.remove(csv_file_texto)
-        st.warning('Texto foi removido.')
+    # Botão para download do Excel
+    if st.button('Baixar Excel com o texto'):
+        df = pd.DataFrame({'Texto': [text]})
+        excel_data = to_excel(df)
+        b64 = base64.b64encode(excel_data).decode()
+        href = f'<a href="data:application/octet-stream;base64,{b64}" download="texto.xlsx">Clique aqui para baixar seu Excel</a>'
+        st.markdown(href, unsafe_allow_html=True)
 
 # Mostrar dados armazenados (deve estar sempre presente)
 st.subheader('Dados Armazenados')
 
-# Mostrar dados do Excel armazenados
-if os.path.exists(csv_file_excel):
+if choice == 'Inserir Excel':
     df_excel = read_df_from_csv(csv_file_excel)
     if not df_excel.empty:
         st.write('**Dados do Excel Armazenados:**')
         st.write(df_excel)
     else:
         st.write('Nenhum dado do Excel foi armazenado ainda.')
-else:
-    st.write('Nenhum dado do Excel foi armazenado ainda.')
 
-# Mostrar PDFs armazenados
-pdf_files = os.listdir(pdf_directory)
-if pdf_files:
-    st.write('**PDFs Armazenados:**')
-    for pdf_file in pdf_files:
-        st.write(f'Nome do arquivo: {pdf_file}')
-else:
-    st.write('Nenhum PDF foi armazenado ainda.')
-
-# Mostrar texto armazenado
-if os.path.exists(csv_file_texto):
-    df_texto = read_df_from_csv(csv_file_texto)
-    if not df_texto.empty:
-        st.write('**Texto Armazenado:**')
-        st.write(df_texto)
+elif choice == 'Inserir PDF':
+    pdf_files = list_pdfs(pdf_directory)
+    if pdf_files:
+        st.write('PDFs Armazenados:')
+        for pdf_file in pdf_files:
+            st.write(f'Nome do arquivo: {pdf_file}')
+            # Exibindo link para baixar o PDF
+            pdf_link = f'<a href="data:application/pdf;base64,{base64.b64encode(open(os.path.join(pdf_directory, pdf_file), "rb").read()).decode()}" download="{pdf_file}">Baixar PDF</a>'
+            st.markdown(pdf_link, unsafe_allow_html=True)
+            st.write('---')
     else:
-        st.write('Nenhum texto foi armazenado ainda.')
-else:
-    st.write('Nenhum texto foi armazenado ainda.')
+        st.write('Nenhum PDF foi armazenado ainda.')
