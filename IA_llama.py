@@ -8,6 +8,14 @@ import os
 st.set_option('deprecation.showfileUploaderEncoding', False)
 MAX_UPLOAD_SIZE = 2048 * 1024 * 1024 # 2 GB em bytes
 
+# Função para converter DataFrame para download em Excel
+def to_excel(df):
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Sheet1')
+    processed_data = output.getvalue()
+    return processed_data
+
 # Função para salvar DataFrame em um arquivo CSV
 def save_df_to_csv(df, filename):
     df.to_csv(filename, index=False)
@@ -27,25 +35,16 @@ def save_pdf(file, directory='pdf_files'):
         f.write(file.read())
     return file_path
 
-# Função para ler PDFs
+# Função para ler lista de PDFs
 def list_pdfs(directory='pdf_files'):
     if os.path.exists(directory):
         return [f for f in os.listdir(directory) if f.endswith('.pdf')]
     return []
 
-# Função para converter DataFrame para download em Excel
-def to_excel(df):
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Sheet1')
-        writer.save()
-    processed_data = output.getvalue()
-    return processed_data
-
 # Configuração inicial
-st.title('Upload de arquivo Excel/PDF e armazenamento seguro')
+st.title('Upload de arquivo Excel/PDF e inserir texto')
 
-# Nome dos arquivos para armazenamento
+# Nome dos arquivos e diretórios para armazenamento
 csv_file_excel = 'dados_excel.csv'
 pdf_directory = 'pdf_files'
 
@@ -65,11 +64,11 @@ if choice == 'Inserir Excel':
             df = pd.read_excel(file)
             if st.button('Inserir Dados do Excel'):
                 save_df_to_csv(df, csv_file_excel)
-                st.success('Dados do Excel inseridos com sucesso no armazenamento de arquivos.')
+                st.success('Dados do Excel inseridos com sucesso.')
             if st.button('Limpar Dados do Excel'):
                 if os.path.exists(csv_file_excel):
                     os.remove(csv_file_excel)
-                st.warning('Dados do Excel foram removidos do armazenamento de arquivos.')
+                st.warning('Dados do Excel foram removidos.')
 
 elif choice == 'Inserir PDF':
     st.title('Inserir Arquivo PDF')
@@ -82,32 +81,22 @@ elif choice == 'Inserir PDF':
         else:
             if st.button('Inserir PDF'):
                 save_pdf(file, pdf_directory)
-                st.success('PDF inserido com sucesso no armazenamento de arquivos.')
+                st.success('PDF inserido com sucesso.')
             if st.button('Limpar Dados do PDF'):
                 pdf_files = list_pdfs(pdf_directory)
                 for pdf_file in pdf_files:
                     os.remove(os.path.join(pdf_directory, pdf_file))
-                st.warning('Dados do PDF foram removidos do armazenamento de arquivos.')
+                st.warning('Dados do PDF foram removidos.')
 
 elif choice == 'Inserir Texto e Baixar Excel':
     st.title('Inserir Texto e Baixar Excel')
 
-    # Inicializa a variável stored_text no session_state
-    if 'stored_text' not in st.session_state:
-        st.session_state['stored_text'] = ''
-
     # Campo de texto para entrada de dados
-    text = st.text_area('Insira seu texto aqui', value=st.session_state['stored_text'])
-
-    # Atualiza a variável stored_text no session_state
-    st.session_state['stored_text'] = text
-
-    # Exibir o texto inserido
-    st.write("Texto inserido:", st.session_state['stored_text'])
+    text = st.text_area('Insira seu texto aqui')
 
     # Botão para download do Excel
     if st.button('Baixar Excel com o texto'):
-        df = pd.DataFrame({'Texto': [st.session_state['stored_text']]})
+        df = pd.DataFrame({'Texto': [text]})
         excel_data = to_excel(df)
         b64 = base64.b64encode(excel_data).decode()
         href = f'<a href="data:application/octet-stream;base64,{b64}" download="texto.xlsx">Clique aqui para baixar seu Excel</a>'
