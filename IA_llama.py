@@ -164,9 +164,13 @@ elif choice == 'Inserir Texto e Baixar Excel':
     st.title('Inserir Texto e Baixar Excel')
     # Campo de texto para entrada de dados
     text = st.text_area('Insira seu texto aqui')
+    # Variável para armazenar o texto inserido
+    stored_text = text
+    # Exibir o texto inserido
+    st.write("Texto inserido:", stored_text)
     # Botão para download do Excel
     if st.button('Baixar Excel com o texto'):
-        df = pd.DataFrame({'Texto': [text]})
+        df = pd.DataFrame({'Texto': [stored_text]})
         excel_data = to_excel(df)
         b64 = base64.b64encode(excel_data).decode()
         href = f'<a href="data:application/octet-stream;base64,{b64}" download="texto.xlsx">Clique aqui para baixar seu Excel</a>'
@@ -179,7 +183,7 @@ if choice == 'Inserir Excel':
     data_excel = read_excel_data(table_name_excel)
     if data_excel:
         # Criar DataFrame a partir dos dados do Excel
-        columns = [desc[0] for desc in sqlite3.connect('data.db').cursor().execute(f'PRAGMA table_info({table_name_excel})').fetchall()]
+        columns = [desc[1] for desc in sqlite3.connect('data.db').cursor().execute(f'PRAGMA table_info({table_name_excel})').fetchall()]
         df_excel = pd.DataFrame(data_excel, columns=columns)
         # Exibir DataFrame no Streamlit
         st.write('**Dados do Excel Armazenados:**')
