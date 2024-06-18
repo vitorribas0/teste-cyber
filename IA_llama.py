@@ -134,7 +134,7 @@ st.subheader('Dados Armazenados')
 
 # Mostrar PDFs armazenados
 pdf_files = list_pdfs(pdf_directory)
-if pdf_files:
+if choice == 'Inserir PDF' and pdf_files:
     st.write('PDFs Armazenados:')
     for pdf_file in pdf_files:
         st.write(f'Nome do arquivo: {pdf_file}')
@@ -142,18 +142,22 @@ if pdf_files:
         pdf_link = f'<a href="data:application/pdf;base64,{base64.b64encode(open(os.path.join(pdf_directory, pdf_file), "rb").read()).decode()}" download="{pdf_file}">Baixar PDF</a>'
         st.markdown(pdf_link, unsafe_allow_html=True)
         st.write('---')
-else:
-    st.write('Nenhum PDF foi armazenado ainda.')
 
 # Exibir textos inseridos
-if os.path.exists(text_csv_file):
+if choice == 'Inserir Texto e Baixar Excel' and os.path.exists(text_csv_file):
     with open(text_csv_file, 'r') as f:
         text_csv_content = f.read()
         st.write('**Texto armazenado em CSV:**')
         st.code(text_csv_content)
 
-if os.path.exists(text_excel_file):
+if choice == 'Inserir Texto e Baixar Excel' and os.path.exists(text_excel_file):
     df_text_excel = pd.read_csv(text_excel_file)
     if not df_text_excel.empty:
         st.write('**Texto armazenado em Excel:**')
         st.write(df_text_excel)
+
+if choice == 'Inserir Excel' and os.path.exists(csv_file_excel):
+    df_excel = pd.read_csv(csv_file_excel)
+    if not df_excel.empty:
+        st.write('**Dados do Excel Armazenados:**')
+        st.write(df_excel)
