@@ -1,50 +1,33 @@
 import streamlit as st
 import pandas as pd
 import base64
-import sqlite3
 import os
+from sqlalchemy import create_engine, Table, Column, Integer, String, MetaData
 
-# Função para criar a conexão com o banco de dados SQLite
-def create_connection(db_file):
-    conn = None
-    try:
-        conn = sqlite3.connect(db_file)
-        return conn
-    except sqlite3.Error as e:
-        print(e)
-    return conn
+# Criando uma conexão com o banco de dados SQLite usando SQLAlchemy
+engine = create_engine('sqlite:///texto_db.sqlite', echo=False)
+metadata = MetaData()
 
-# Função para criar tabela de texto se não existir
-def create_text_table(conn):
-    sql_create_texts_table = """
-        CREATE TABLE IF NOT EXISTS texts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            text TEXT NOT NULL
-        );
-    """
-    try:
-        c = conn.cursor()
-        c.execute(sql_create_texts_table)
-    except sqlite3.Error as e:
-        print(e)
+# Definindo a tabela texts
+texts = Table('texts', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('text', String)
+)
+
+metadata.create_all(engine)
 
 # Função para inserir texto na tabela
-def insert_text(conn, text):
-    sql = '''
-        INSERT INTO texts (text)
-        VALUES (?);
-    '''
-    cur = conn.cursor()
-    cur.execute(sql, (text,))
-    conn.commit()
-    return cur.lastrowid
+def insert_text(text):
+    with engine.connect() as conn:
+        insert_stmt = texts.insert().values(text=text)
+        conn.execute(insert_stmt)
 
 # Função para buscar todos os textos na tabela
-def select_all_texts(conn):
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM texts")
-    rows = cur.fetchall()
-    return rows
+def select_all_texts():
+    with engine.connect() as conn:
+        select_stmt = texts.select()
+        result = conn.execute(select_stmt)
+        return result.fetchall()
 
 # Função para salvar DataFrame em um arquivo CSV
 def save_df_to_csv(df, filename):
@@ -71,7 +54,7 @@ def list_pdfs(directory='pdf_files'):
     return []
 
 # Configuração inicial
-st.title('Upload de arquivo Excel/PDF, inserir texto e visualizar dados')
+st.title('Manipulação de Dados: Excel, PDF e Texto')
 
 # Nome dos arquivos e diretórios para armazenamento
 csv_file_excel = 'dados_excel.csv'
@@ -80,15 +63,16 @@ text_csv_file = 'texto.csv'
 text_excel_file = 'texto.xlsx'
 db_file = 'texto_db.sqlite'
 
+# Aumentando o limite de upload para 2 GB (2048 MB)
+st.set_option('deprecation.showfileUploaderEncoding', False)
+MAX_UPLOAD_SIZE = 2048 * 1024 * 1024 # 2 GB em bytes
+
 # Sidebar com botão para selecionar a funcionalidade desejada
 menu = ['Inserir Excel', 'Inserir PDF', 'Inserir Texto', 'Ver Dados Armazenados']
 choice = st.sidebar.selectbox('Escolha uma opção', menu)
 
 # Conectar ao banco de dados SQLite (ou criar se não existir)
-conn = create_connection(db_file)
-if conn is not None:
-    # Criar a tabela de textos se não existir
-    create_text_table(conn)
+conn = create_engine('sqlite:///texto_db.sqlite', echo=False)
 
 if choice == 'Inserir Excel':
     st.title('Inserir Arquivo Excel')
@@ -135,14 +119,14 @@ elif choice == 'Inserir Texto':
     # Botão para salvar o texto no banco de dados
     if st.button('Salvar Texto'):
         if text:
-            text_id = insert_text(conn, text)
-            st.success(f'Texto inserido com ID {text_id}')
+            insert_text(text)
+            st.success('Texto inserido com sucesso.')
 
 elif choice == 'Ver Dados Armazenados':
     st.title('Dados Armazenados')
 
     # Buscar todos os textos na tabela
-    texts = select_all_texts(conn)
+    texts = select_all_texts()
     if texts:
         st.write('Textos Armazenados:')
         for text in texts:
@@ -152,4 +136,4 @@ elif choice == 'Ver Dados Armazenados':
 
 # Fechar a conexão com o banco de dados
 if conn:
-    conn.close()
+    conn.dispose()
