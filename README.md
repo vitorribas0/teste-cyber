@@ -1,2 +1,2 @@
-# IA_llama2
+# upload de arquivo
 projeto para subir arquivos no formato excel, pdf e texto.
