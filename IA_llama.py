@@ -179,7 +179,7 @@ if choice == 'Inserir Excel':
     data_excel = read_excel_data(table_name_excel)
     if data_excel:
         # Criar DataFrame a partir dos dados do Excel
-        df_excel = pd.DataFrame(data_excel, columns=['ID'] + pd.read_excel(file).columns.tolist())
+        df_excel = pd.DataFrame(data_excel, columns=['ID'] + list(pd.read_sql_query(f'SELECT * FROM "{table_name_excel}" LIMIT 1', sqlite3.connect('data.db')).columns)[1:])
         # Exibir DataFrame no Streamlit
         st.write('**Dados do Excel Armazenados:**')
         st.write(df_excel)
