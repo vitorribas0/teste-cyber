@@ -162,15 +162,23 @@ elif choice == 'Inserir PDF':
 
 elif choice == 'Inserir Texto e Baixar Excel':
     st.title('Inserir Texto e Baixar Excel')
+
+    # Inicializa a variável stored_text no session_state
+    if 'stored_text' not in st.session_state:
+        st.session_state['stored_text'] = ''
+
     # Campo de texto para entrada de dados
-    text = st.text_area('Insira seu texto aqui')
-    # Variável para armazenar o texto inserido
-    stored_text = text
+    text = st.text_area('Insira seu texto aqui', value=st.session_state['stored_text'])
+
+    # Atualiza a variável stored_text no session_state
+    st.session_state['stored_text'] = text
+
     # Exibir o texto inserido
-    st.write("Texto inserido:", stored_text)
+    st.write("Texto inserido:", st.session_state['stored_text'])
+
     # Botão para download do Excel
     if st.button('Baixar Excel com o texto'):
-        df = pd.DataFrame({'Texto': [stored_text]})
+        df = pd.DataFrame({'Texto': [st.session_state['stored_text']]})
         excel_data = to_excel(df)
         b64 = base64.b64encode(excel_data).decode()
         href = f'<a href="data:application/octet-stream;base64,{b64}" download="texto.xlsx">Clique aqui para baixar seu Excel</a>'
