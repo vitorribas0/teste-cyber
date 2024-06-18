@@ -1,42 +1,24 @@
 import streamlit as st
 import pandas as pd
 import base64
+from io import BytesIO
 import os
-from sqlalchemy import create_engine, Table, Column, Integer, String, MetaData
 
-# Criando uma conexão com o banco de dados SQLite usando SQLAlchemy
-engine = create_engine('sqlite:///texto_db.sqlite', echo=False)
-metadata = MetaData()
+# Aumentando o limite de upload para 2 GB (2048 MB)
+st.set_option('deprecation.showfileUploaderEncoding', False)
+MAX_UPLOAD_SIZE = 2048 * 1024 * 1024 # 2 GB em bytes
 
-# Definindo a tabela texts
-texts = Table('texts', metadata,
-    Column('id', Integer, primary_key=True),
-    Column('text', String)
-)
-
-metadata.create_all(engine)
-
-# Função para inserir texto na tabela
-def insert_text(text):
-    with engine.connect() as conn:
-        insert_stmt = texts.insert().values(text=text)
-        conn.execute(insert_stmt)
-
-# Função para buscar todos os textos na tabela
-def select_all_texts():
-    with engine.connect() as conn:
-        select_stmt = texts.select()
-        result = conn.execute(select_stmt)
-        return result.fetchall()
+# Função para converter DataFrame para download em Excel
+def to_excel(df):
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Sheet1')
+    processed_data = output.getvalue()
+    return processed_data
 
 # Função para salvar DataFrame em um arquivo CSV
 def save_df_to_csv(df, filename):
     df.to_csv(filename, index=False)
-
-# Função para salvar texto em um arquivo Excel
-def save_text_to_excel(text, filename):
-    df = pd.DataFrame({'Texto': [text]})
-    save_df_to_csv(df, filename)
 
 # Função para salvar PDF
 def save_pdf(file, directory='pdf_files'):
@@ -53,26 +35,28 @@ def list_pdfs(directory='pdf_files'):
         return [f for f in os.listdir(directory) if f.endswith('.pdf')]
     return []
 
+# Função para salvar texto em um arquivo CSV
+def save_text_to_csv(text, filename):
+    with open(filename, 'w') as f:
+        f.write(text)
+
+# Função para salvar texto em um arquivo Excel
+def save_text_to_excel(text, filename):
+    df = pd.DataFrame({'Texto': [text]})
+    save_df_to_csv(df, filename)
+
 # Configuração inicial
-st.title('Manipulação de Dados: Excel, PDF e Texto')
+st.title('Upload de arquivo Excel/PDF e inserir texto')
 
 # Nome dos arquivos e diretórios para armazenamento
 csv_file_excel = 'dados_excel.csv'
 pdf_directory = 'pdf_files'
 text_csv_file = 'texto.csv'
 text_excel_file = 'texto.xlsx'
-db_file = 'texto_db.sqlite'
-
-# Aumentando o limite de upload para 2 GB (2048 MB)
-st.set_option('deprecation.showfileUploaderEncoding', False)
-MAX_UPLOAD_SIZE = 2048 * 1024 * 1024 # 2 GB em bytes
 
 # Sidebar com botão para selecionar a funcionalidade desejada
-menu = ['Inserir Excel', 'Inserir PDF', 'Inserir Texto', 'Ver Dados Armazenados']
+menu = ['Inserir Excel', 'Inserir PDF', 'Inserir Texto e Baixar Excel']
 choice = st.sidebar.selectbox('Escolha uma opção', menu)
-
-# Conectar ao banco de dados SQLite (ou criar se não existir)
-conn = create_engine('sqlite:///texto_db.sqlite', echo=False)
 
 if choice == 'Inserir Excel':
     st.title('Inserir Arquivo Excel')
@@ -110,30 +94,45 @@ elif choice == 'Inserir PDF':
                     os.remove(os.path.join(pdf_directory, pdf_file))
                 st.warning('Dados do PDF foram removidos.')
 
-elif choice == 'Inserir Texto':
-    st.title('Inserir Texto')
+elif choice == 'Inserir Texto e Baixar Excel':
+    st.title('Inserir Texto e Baixar Excel')
 
     # Campo de texto para entrada de dados
     text = st.text_area('Insira seu texto aqui')
 
-    # Botão para salvar o texto no banco de dados
-    if st.button('Salvar Texto'):
-        if text:
-            insert_text(text)
-            st.success('Texto inserido com sucesso.')
+    # Botão para download do Excel
+    if st.button('Baixar Excel com o texto'):
+        save_text_to_excel(text, text_excel_file)
+        excel_data = to_excel(pd.DataFrame({'Texto': [text]}))
+        b64 = base64.b64encode(excel_data).decode()
+        href = f'<a href="data:application/octet-stream;base64,{b64}" download="{text_excel_file}">Clique aqui para baixar seu Excel</a>'
+        st.markdown(href, unsafe_allow_html=True)
 
-elif choice == 'Ver Dados Armazenados':
-    st.title('Dados Armazenados')
+    # Botão para salvar o texto em um arquivo CSV
+    if st.button('Salvar Texto em CSV'):
+        save_text_to_csv(text, text_csv_file)
+        st.success(f'Texto salvo com sucesso em {text_csv_file}')
 
-    # Buscar todos os textos na tabela
-    texts = select_all_texts()
-    if texts:
-        st.write('Textos Armazenados:')
-        for text in texts:
-            st.write(f'ID: {text[0]}, Texto: {text[1]}')
+# Mostrar dados armazenados (deve estar sempre presente)
+st.subheader('Dados Armazenados')
+
+if choice == 'Inserir Excel':
+    df_excel = pd.read_csv(csv_file_excel) if os.path.exists(csv_file_excel) else pd.DataFrame()
+    if not df_excel.empty:
+        st.write('**Dados do Excel Armazenados:**')
+        st.write(df_excel)
     else:
-        st.write('Nenhum texto foi armazenado ainda.')
+        st.write('Nenhum dado do Excel foi armazenado ainda.')
 
-# Fechar a conexão com o banco de dados
-if conn:
-    conn.dispose()
+elif choice == 'Inserir PDF':
+    pdf_files = list_pdfs(pdf_directory)
+    if pdf_files:
+        st.write('PDFs Armazenados:')
+        for pdf_file in pdf_files:
+            st.write(f'Nome do arquivo: {pdf_file}')
+            # Exibindo link para baixar o PDF
+            pdf_link = f'<a href="data:application/pdf;base64,{base64.b64encode(open(os.path.join(pdf_directory, pdf_file), "rb").read()).decode()}" download="{pdf_file}">Baixar PDF</a>'
+            st.markdown(pdf_link, unsafe_allow_html=True)
+            st.write('---')
+    else:
+        st.write('Nenhum PDF foi armazenado ainda.')
