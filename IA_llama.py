@@ -1,12 +1,11 @@
 import streamlit as st
 import pandas as pd
 import base64
-from io import BytesIO
 import os
 
 # Aumentando o limite de upload para 2 GB (2048 MB)
 st.set_option('deprecation.showfileUploaderEncoding', False)
-MAX_UPLOAD_SIZE = 2048 * 1024 * 1024 # 2 GB em bytes
+MAX_UPLOAD_SIZE = 2048 * 1024 * 1024  # 2 GB em bytes
 
 # Função para converter DataFrame para download em Excel
 def to_excel(df):
@@ -47,9 +46,10 @@ st.title('Upload de arquivo Excel/PDF e inserir texto')
 # Nome dos arquivos e diretórios para armazenamento
 csv_file_excel = 'dados_excel.csv'
 pdf_directory = 'pdf_files'
+csv_file_texto = 'dados_texto.csv'
 
 # Sidebar com botão para selecionar a funcionalidade desejada
-menu = ['Inserir Excel', 'Inserir PDF', 'Inserir Texto e Baixar Excel']
+menu = ['Inserir Excel', 'Inserir PDF', 'Inserir Texto e Baixar Excel', 'Visualizar e Limpar Dados de Texto']
 choice = st.sidebar.selectbox('Escolha uma opção', menu)
 
 if choice == 'Inserir Excel':
@@ -94,13 +94,39 @@ elif choice == 'Inserir Texto e Baixar Excel':
     # Campo de texto para entrada de dados
     text = st.text_area('Insira seu texto aqui')
 
-    # Botão para download do Excel
+    # Botão para salvar o texto
+    if st.button('Salvar Texto'):
+        df_texto = pd.DataFrame({'Texto': [text]})
+        save_df_to_csv(df_texto, csv_file_texto)
+        st.success('Texto salvo com sucesso.')
+
+    # Botão para download do Excel com o texto
     if st.button('Baixar Excel com o texto'):
-        df = pd.DataFrame({'Texto': [text]})
-        excel_data = to_excel(df)
-        b64 = base64.b64encode(excel_data).decode()
-        href = f'<a href="data:application/octet-stream;base64,{b64}" download="texto.xlsx">Clique aqui para baixar seu Excel</a>'
-        st.markdown(href, unsafe_allow_html=True)
+        df_texto = read_df_from_csv(csv_file_texto)
+        if not df_texto.empty:
+            excel_data = to_excel(df_texto)
+            b64 = base64.b64encode(excel_data).decode()
+            href = f'<a href="data:application/octet-stream;base64,{b64}" download="texto.xlsx">Clique aqui para baixar seu Excel</a>'
+            st.markdown(href, unsafe_allow_html=True)
+        else:
+            st.warning('Nenhum dado de texto encontrado.')
+
+elif choice == 'Visualizar e Limpar Dados de Texto':
+    st.title('Visualizar e Limpar Dados de Texto')
+
+    # Mostrar dados de texto armazenados
+    df_texto = read_df_from_csv(csv_file_texto)
+    if not df_texto.empty:
+        st.write('**Dados de Texto Armazenados:**')
+        st.write(df_texto)
+    else:
+        st.write('Nenhum dado de texto foi armazenado ainda.')
+
+    # Botão para limpar dados de texto
+    if st.button('Limpar Dados de Texto'):
+        if os.path.exists(csv_file_texto):
+            os.remove(csv_file_texto)
+        st.warning('Dados de texto foram removidos.')
 
 # Mostrar dados armazenados (deve estar sempre presente)
 st.subheader('Dados Armazenados')
