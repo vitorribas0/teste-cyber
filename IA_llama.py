@@ -20,12 +20,6 @@ def to_excel(df):
 def save_df_to_csv(df, filename):
     df.to_csv(filename, index=False)
 
-# Função para ler DataFrame de um arquivo CSV
-def read_df_from_csv(filename):
-    if os.path.exists(filename):
-        return pd.read_csv(filename)
-    return pd.DataFrame()
-
 # Função para salvar PDF
 def save_pdf(file, directory='pdf_files'):
     if not os.path.exists(directory):
@@ -41,12 +35,24 @@ def list_pdfs(directory='pdf_files'):
         return [f for f in os.listdir(directory) if f.endswith('.pdf')]
     return []
 
+# Função para salvar texto em um arquivo CSV
+def save_text_to_csv(text, filename):
+    with open(filename, 'w') as f:
+        f.write(text)
+
+# Função para salvar texto em um arquivo Excel
+def save_text_to_excel(text, filename):
+    df = pd.DataFrame({'Texto': [text]})
+    save_df_to_csv(df, filename)
+
 # Configuração inicial
 st.title('Upload de arquivo Excel/PDF e inserir texto')
 
 # Nome dos arquivos e diretórios para armazenamento
 csv_file_excel = 'dados_excel.csv'
 pdf_directory = 'pdf_files'
+text_csv_file = 'texto.csv'
+text_excel_file = 'texto.xlsx'
 
 # Sidebar com botão para selecionar a funcionalidade desejada
 menu = ['Inserir Excel', 'Inserir PDF', 'Inserir Texto e Baixar Excel']
@@ -96,17 +102,22 @@ elif choice == 'Inserir Texto e Baixar Excel':
 
     # Botão para download do Excel
     if st.button('Baixar Excel com o texto'):
-        df = pd.DataFrame({'Texto': [text]})
-        excel_data = to_excel(df)
+        save_text_to_excel(text, text_excel_file)
+        excel_data = to_excel(pd.DataFrame({'Texto': [text]}))
         b64 = base64.b64encode(excel_data).decode()
-        href = f'<a href="data:application/octet-stream;base64,{b64}" download="texto.xlsx">Clique aqui para baixar seu Excel</a>'
+        href = f'<a href="data:application/octet-stream;base64,{b64}" download="{text_excel_file}">Clique aqui para baixar seu Excel</a>'
         st.markdown(href, unsafe_allow_html=True)
+
+    # Botão para salvar o texto em um arquivo CSV
+    if st.button('Salvar Texto em CSV'):
+        save_text_to_csv(text, text_csv_file)
+        st.success(f'Texto salvo com sucesso em {text_csv_file}')
 
 # Mostrar dados armazenados (deve estar sempre presente)
 st.subheader('Dados Armazenados')
 
 if choice == 'Inserir Excel':
-    df_excel = read_df_from_csv(csv_file_excel)
+    df_excel = pd.read_csv(csv_file_excel) if os.path.exists(csv_file_excel) else pd.DataFrame()
     if not df_excel.empty:
         st.write('**Dados do Excel Armazenados:**')
         st.write(df_excel)
