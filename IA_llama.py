@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import base64
 import os
+import requests
 
 # Função para salvar DataFrame em um arquivo CSV
 def save_df_to_csv(df, filename):
@@ -15,16 +16,22 @@ def save_text_to_csv(text, filename):
 # Função para salvar texto em um arquivo Excel
 def save_text_to_excel(text, filename):
     df = pd.DataFrame({'Texto': [text]})
-    save_df_to_csv(df, filename)
+    df.to_excel(filename, index=False)
 
 # Função para salvar PDF
-def save_pdf(file, directory='pdf_files'):
+def save_pdf_from_url(url, directory='pdf_files'):
     if not os.path.exists(directory):
         os.makedirs(directory)
-    file_path = os.path.join(directory, file.name)
-    with open(file_path, 'wb') as f:
-        f.write(file.read())
-    return file_path
+    response = requests.get(url)
+    if response.status_code == 200:
+        file_name = os.path.basename(url)
+        file_path = os.path.join(directory, file_name)
+        with open(file_path, 'wb') as f:
+            f.write(response.content)
+        return file_path
+    else:
+        st.error('Erro ao baixar o arquivo PDF.')
+        return None
 
 # Função para listar PDFs armazenados
 def list_pdfs(directory='pdf_files'):
@@ -49,10 +56,6 @@ pdf_directory = 'pdf_files'
 text_csv_file = 'texto.csv'
 text_excel_file = 'texto.xlsx'
 
-# Aumentando o limite de upload para 2 GB (2048 MB)
-st.set_option('deprecation.showfileUploaderEncoding', False)
-MAX_UPLOAD_SIZE = 2048 * 1024 * 1024  # 2 GB em bytes
-
 # Sidebar com botão para selecionar a funcionalidade desejada
 menu = ['Inserir Excel', 'Inserir PDF', 'Inserir Texto e Baixar Excel']
 choice = st.sidebar.selectbox('Escolha uma opção', menu)
@@ -64,20 +67,19 @@ if choice == 'Inserir Excel':
             os.remove(csv_file_excel)
         st.warning('Dados do Excel foram removidos.')
 
-    st.title('Inserir Arquivo Excel')
-    # Upload do arquivo Excel
-    file = st.file_uploader('Carregue um arquivo Excel', type=['xls', 'xlsx'])
-    if file is not None:
-        # Verifica o tamanho do arquivo Excel
-        if len(file.getvalue()) > MAX_UPLOAD_SIZE:
-            st.error(f'O arquivo selecionado excede o limite máximo de {MAX_UPLOAD_SIZE / (1024 * 1024)} MB.')
-        else:
-            df = pd.read_excel(file)
+    st.title('Inserir URL de Arquivo Excel')
+    # Inserir URL do arquivo Excel
+    url = st.text_input('Insira a URL de um arquivo Excel')
+    if url:
+        try:
+            df = pd.read_excel(url)
             if st.button('Inserir Dados do Excel'):
                 save_df_to_csv(df, csv_file_excel)
                 st.success('Dados do Excel inseridos com sucesso.')
                 st.write('**Dados do Excel Inseridos:**')
                 st.write(df)
+        except Exception as e:
+            st.error(f'Erro ao processar o arquivo Excel: {e}')
 
 elif choice == 'Inserir PDF':
     if st.button('Limpar Dados do PDF'):
@@ -86,20 +88,16 @@ elif choice == 'Inserir PDF':
             os.remove(os.path.join(pdf_directory, pdf_file))
         st.warning('Dados do PDF foram removidos.')
 
-    st.title('Inserir Arquivo PDF')
-    # Upload do arquivo PDF
-    file = st.file_uploader('Carregue um arquivo PDF', type=['pdf'])
-    if file is not None:
-        # Verifica o tamanho do arquivo PDF
-        if len(file.getvalue()) > MAX_UPLOAD_SIZE:
-            st.error(f'O arquivo selecionado excede o limite máximo de {MAX_UPLOAD_SIZE / (1024 * 1024)} MB.')
-        else:
-            if st.button('Inserir PDF'):
-                file_path = save_pdf(file, pdf_directory)
-                st.success('PDF inserido com sucesso.')
-                st.write('**Link para Download do PDF Inserido:**')
-                pdf_link = f'<a href="data:application/pdf;base64,{base64.b64encode(open(file_path, "rb").read()).decode()}" download="{file.name}">Baixar PDF</a>'
-                st.markdown(pdf_link, unsafe_allow_html=True)
+    st.title('Inserir URL de Arquivo PDF')
+    # Inserir URL do arquivo PDF
+    url = st.text_input('Insira a URL de um arquivo PDF')
+    if url:
+        file_path = save_pdf_from_url(url, pdf_directory)
+        if file_path:
+            st.success('PDF inserido com sucesso.')
+            st.write('**Link para Download do PDF Inserido:**')
+            pdf_link = f'<a href="data:application/pdf;base64,{base64.b64encode(open(file_path, "rb").read()).decode()}" download="{os.path.basename(file_path)}">Baixar PDF</a>'
+            st.markdown(pdf_link, unsafe_allow_html=True)
 
 elif choice == 'Inserir Texto e Baixar Excel':
     if st.button('Limpar Dados de Texto'):
@@ -117,9 +115,9 @@ elif choice == 'Inserir Texto e Baixar Excel':
     # Botão para download do Excel com o texto
     if st.button('Baixar Excel com o texto'):
         save_text_to_excel(text, text_excel_file)
-        excel_data = pd.DataFrame({'Texto': [text]})
-        b64 = base64.b64encode(excel_data.to_csv(index=False).encode()).decode()
-        href = f'<a href="data:text/csv;base64,{b64}" download="{text_excel_file}">Clique aqui para baixar seu Excel</a>'
+        with open(text_excel_file, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode()
+        href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="{text_excel_file}">Clique aqui para baixar seu Excel</a>'
         st.markdown(href, unsafe_allow_html=True)
 
     # Botão para salvar o texto em um arquivo CSV
