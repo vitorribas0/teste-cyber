@@ -3,6 +3,7 @@ import pandas as pd
 import base64
 import os
 import requests
+from io import BytesIO
 
 # Função para salvar DataFrame em um arquivo CSV
 def save_df_to_csv(df, filename):
@@ -18,7 +19,7 @@ def save_text_to_excel(text, filename):
     df = pd.DataFrame({'Texto': [text]})
     df.to_excel(filename, index=False)
 
-# Função para salvar PDF
+# Função para salvar PDF a partir de uma URL
 def save_pdf_from_url(url, directory='pdf_files'):
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -72,12 +73,16 @@ if choice == 'Inserir Excel':
     url = st.text_input('Insira a URL de um arquivo Excel')
     if url:
         try:
-            df = pd.read_excel(url)
+            response = requests.get(url)
+            response.raise_for_status()  # Verifica se houve algum erro na requisição
+            df = pd.read_excel(BytesIO(response.content))
             if st.button('Inserir Dados do Excel'):
                 save_df_to_csv(df, csv_file_excel)
                 st.success('Dados do Excel inseridos com sucesso.')
                 st.write('**Dados do Excel Inseridos:**')
                 st.write(df)
+        except requests.exceptions.RequestException as e:
+            st.error(f'Erro ao baixar o arquivo Excel: {e}')
         except Exception as e:
             st.error(f'Erro ao processar o arquivo Excel: {e}')
 
@@ -149,7 +154,7 @@ if choice == 'Inserir Texto e Baixar Excel' and os.path.exists(text_csv_file):
         st.code(text_csv_content)
 
 if choice == 'Inserir Texto e Baixar Excel' and os.path.exists(text_excel_file):
-    df_text_excel = pd.read_csv(text_excel_file)
+    df_text_excel = pd.read_excel(text_excel_file)
     if not df_text_excel.empty:
         st.write('**Texto armazenado em Excel:**')
         st.write(df_text_excel)
